@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.inc text eol=lf
+*.s text eol=lf

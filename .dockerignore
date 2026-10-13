@@ -1,0 +1,9 @@
+**
+!Dockerfile
+!.dockerignore
+!docker/
+!docker/nginx.conf
+!index.html
+!style.css
+!game.js
+!game-data.js

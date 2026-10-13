@@ -1,0 +1,20 @@
+{
+  "name": "ozing-v1-plus-magic-tower",
+  "version": "1.0.0",
+  "description": "Framework-free portrait Web host for the original V1+ Magic Tower 50",
+  "private": true,
+  "license": "MIT",
+  "repository": "github:ZhangyihengCHN/Ozing-V1-Plus-Magic-Tower",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build:web": "node build-web.mjs",
+    "start": "node serve.cjs",
+    "test": "node tools/test.mjs",
+    "test:crypto": "node tools/test.mjs --crypto-only",
+    "check:source": "node tools/check-source.mjs"
+  },
+  "devDependencies": {
+    "@noble/ciphers": "2.4.0",
+    "esbuild": "0.28.2"
+  }
+}

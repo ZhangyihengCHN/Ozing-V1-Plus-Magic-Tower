@@ -1,0 +1,86 @@
+{
+  "bmp00": {
+    "bytes": 43304,
+    "sha256": "54c795f84ead2c805ebe62d6b3b07f46e391796c1d4d02f5c6297d2f63e8139e"
+  },
+  "bmp01": {
+    "bytes": 13078,
+    "sha256": "8565fcdde77d245c248cce270881be108f766d9206499360a828ab3530d5ecf2"
+  },
+  "bmp02": {
+    "bytes": 77876,
+    "sha256": "63fd23af87a8cd2b2dfb8056ec1020bd280e53a261a317b27366652d3900e0c5"
+  },
+  "bmp03": {
+    "bytes": 2852,
+    "sha256": "66abf25596caf6e744c6504fae61c62a004a8b42ae8e0cde31fe233cda046c09"
+  },
+  "bmp04": {
+    "bytes": 1400,
+    "sha256": "03b541bcb83da65688d7733ac35744567f2e47fed3f361762562b631bb1017d4"
+  },
+  "bmp05": {
+    "bytes": 77876,
+    "sha256": "9cd4cb88d370d2f71493a5e34ee0202e1e65e0ecef7fa60044287eccd1f42e7d"
+  },
+  "bmp06": {
+    "bytes": 1780,
+    "sha256": "5a059577948414605b1db35869f3ce160e05086e0ad462a6bbb5c5a8b0d81d28"
+  },
+  "bmp07": {
+    "bytes": 5876,
+    "sha256": "5d0a655e4414b3ca08b066bb0d86733538ee443548bb5ad72d87616ede3ea44a"
+  },
+  "bmp08": {
+    "bytes": 3556,
+    "sha256": "acc10bbcef113701ce653d27716a165322e43a288750259eaaed9d776e2a8933"
+  },
+  "bmp09": {
+    "bytes": 13478,
+    "sha256": "2c817824500b52454acd2c27b658836a12a3daf5c42b3d467e540156eeb93a14"
+  },
+  "bmp10": {
+    "bytes": 5404,
+    "sha256": "9e11206a773915511ad599e52c3d3572b7b6e1866f86a652b4dfd732aaf98b66"
+  },
+  "bmp11": {
+    "bytes": 77878,
+    "sha256": "04fce71f70e5479897e51648929f88b467d92ce18a860136991f49e7a1db8407"
+  },
+  "bmp12": {
+    "bytes": 77876,
+    "sha256": "627a890e7b86d26cbf4af2bd3aa641a822c20b5e1d5830e4c5d650784323f101"
+  },
+  "bmp13": {
+    "bytes": 1834,
+    "sha256": "36fbdc3ca2a14c12d15b4f0d4d8c51d59140bcc660a41795902053e1daee30a6"
+  },
+  "dlg0281": {
+    "bytes": 6144,
+    "sha256": "dd4490572aa75cec1137ef75ea9795bb36a2010b5f2fccb86c38d734c7a56c55"
+  },
+  "font100": {
+    "bytes": 838656,
+    "sha256": "76c34d370294101bf51cbe40ff8d216586bc95ad08dd5dc9142496ee505c613c"
+  },
+  "font96": {
+    "bytes": 12288,
+    "sha256": "22ed5b303bb0f0ad0106631b9ba12b13673bac18ba3b3e51a9fcd0016800188c"
+  },
+  "font_ascii12": {
+    "bytes": 9052,
+    "sha256": "55309d7fdcbda84b3def6917471a6e0cb9c5f4485567315985e1c80579a35a82"
+  },
+  "font_cjk12": {
+    "bytes": 628992,
+    "sha256": "2647955466857e014a5d91dc6dfdebdf4279041a9480a77d227dac34f2997487"
+  },
+  "fw": {
+    "bytes": 4718592,
+    "sha256": "78f108c5b33a08a74b87bea95786b4f1bf40d028be5381f89d63d301aa406008"
+  },
+  "map0280": {
+    "bytes": 6144,
+    "sha256": "d7e46d8ff849452bd9981fc8faaea171efa7dfca5b980c13bb809171fa1c596c"
+  }
+}

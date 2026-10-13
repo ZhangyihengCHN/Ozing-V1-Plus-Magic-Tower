@@ -1,0 +1,21 @@
+name: Source checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run check:source
+      - run: npm run build:web
+      - run: npm run test:crypto
+      - run: python -m py_compile build.py prepare-assets.py prepare_assets.py package.py

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#171914">
+  <title>魔塔 50 · 竖屏原版</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="game.js" data-runtime="game-data.js" data-runtime-size="3995961"></script>
+</head>
+<body>
+  <main class="game-shell">
+    <section class="screen-frame" aria-label="竖屏魔塔游戏">
+      <canvas id="screen" width="240" height="320" tabindex="0" aria-label="魔塔游戏画面，方向键或 WASD 移动，回车或 Z 确认，Esc 或 X 返回"></canvas>
+      <div id="loading" class="overlay loading-screen" role="status" aria-live="polite">
+        <div class="loading-emblem" aria-hidden="true"><i></i><img class="loading-hero" width="20" height="20" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAACEElEQVR42pWUv2vbQBTHvxeMvTSDoJ1Ki9/QgoeCFegfYGkzeGizZbUzCS+Kts7dHHso6lCcNVvSoZDNEhS8SoGQKtDhRNYM6lwM10F+F0l2bPctd7ofn/u+975IYIc46ZDi+WkoxaazYhdQq0kAgCSV2Abe26aOYdvWtio86ZBqNamkimG8tk7lRoVJKtHtWQAAZ+jAGTpb670R6AwdWJ0uAICI4H/xYfW6G8Fa8mg80530XFsAwGzcVwzkkFJCpgnOE6DVOirtea4txGg8U9QkfPyQFzq+fryY/RiA3pFWyTB5I2H0piCi0kO3v37mKctlkRnGYfSmkDcSQXi1AqsGEeH+/neecjFdAKClLWQq9byU9nJdVhxwdxfkCrlm1bA6Vn65mNoTjwDA9NtnoUFRHGmVQZiBmqRBQRiUHuGaEf0pAQ/MA6FtY7ZNmG1Td0umEmYbMNuPEB6LdQeALPSRhX7Zh8FkgGAyAAD0j/vKc21x+V0ivs7VsCoePdcW/lf/aR+q+ELl6V0hxpFuDtesmD6ve64til4V5qGoabJ5qOEXl58UA6pNYYtwyrZ7JoAzvVdb1y0+LFMJq2NUmmJolf8dURyp0Xim2AFRHCmllP7uH/dV9c5ahWz0IMxW9k4ngT6TJOe7/W0a9QVqe3+xv/8Mr18ZmM8fAADz+QPevnmJRn2BRn2BF8/fr9z9B9GfBFiwEkrHAAAAAElFTkSuQmCC"></div>
+        <strong>正在打开魔塔</strong>
+        <span id="loading-stage">准备加载游戏资源</span>
+        <progress id="loading-progress" max="100" aria-label="当前资源加载进度"></progress>
+        <span id="loading-detail">地图 · 贴图 · 字库 · 原版游戏</span>
+        <button id="loading-retry" hidden>重新加载</button>
+      </div>
+      <div id="paused" class="overlay" hidden><strong>已暂停</strong><button id="resume">继续冒险</button></div>
+      <div id="menu" class="overlay" hidden>
+        <strong>冒险菜单</strong>
+        <button id="menu-resume">继续游戏</button>
+        <button id="menu-save">保存进度</button>
+        <button id="menu-title">返回标题</button>
+        <div class="save-transfer" role="group" aria-label="存档备份与恢复">
+        <button id="export" disabled>导出存档</button>
+        <label class="import-button" for="import">导入存档<input id="import" type="file" accept=".json" disabled></label>
+        </div>
+        <p id="menu-error" role="alert" hidden></p>
+      </div>
+      <div id="save-picker" class="save-picker" hidden>
+        <section class="save-dialog" role="dialog" aria-labelledby="save-picker-title" tabindex="-1">
+          <header class="save-dialog-header"><div><h2 id="save-picker-title">保存进度</h2><p id="save-picker-subtitle"></p></div><button id="save-picker-close" aria-label="关闭存档选择">关闭</button></header>
+          <div id="save-slots" class="save-slots"></div>
+          <footer class="save-dialog-footer">
+            <button id="save-slot-action" class="save-slot-action">读取存档槽 1</button>
+            <button id="save-auto" class="save-auto" hidden></button>
+            <div id="save-overwrite" class="save-overwrite" hidden><span id="save-overwrite-text"></span><div><button id="save-overwrite-cancel">取消</button><button id="save-overwrite-confirm" class="slot-confirm">覆盖保存</button></div></div>
+            <p id="save-picker-error" role="alert" hidden></p>
+          </footer>
+        </section>
+      </div>
+    </section>
+    <nav class="tools" aria-label="存档与辅助功能">
+      <div class="progress-actions" role="group" aria-label="游戏进度">
+        <button id="save" title="保存进度（F5）" disabled>保存进度</button>
+        <button id="continue" title="读取进度（F9）" disabled>读取进度</button>
+      </div>
+      <div class="secondary-actions" role="group" aria-label="手册与楼层飞行">
+        <button data-key="66" title="怪物手册（B）" disabled>怪物手册</button>
+        <button id="fly-up" title="上一层（PageUp）" disabled>上一层</button>
+        <button id="fly-down" title="下一层（PageDown）" disabled>下一层</button>
+      </div>
+    </nav>
+    <nav class="quick-items" aria-label="道具快捷栏">
+      <button id="quick-0" type="button" disabled><span class="quick-key">1</span><span class="quick-art"><i id="quick-icon-0" class="quick-icon" style="--item-slot:0" aria-hidden="true" hidden></i><span id="quick-count-0" class="quick-count"></span></span></button>
+      <button id="quick-1" type="button" disabled><span class="quick-key">2</span><span class="quick-art"><i id="quick-icon-1" class="quick-icon" style="--item-slot:1" aria-hidden="true" hidden></i><span id="quick-count-1" class="quick-count"></span></span></button>
+      <button id="quick-2" type="button" disabled><span class="quick-key">3</span><span class="quick-art"><i id="quick-icon-2" class="quick-icon" style="--item-slot:2" aria-hidden="true" hidden></i><span id="quick-count-2" class="quick-count"></span></span></button>
+      <button id="quick-3" type="button" disabled><span class="quick-key">4</span><span class="quick-art"><i id="quick-icon-3" class="quick-icon" style="--item-slot:3" aria-hidden="true" hidden></i><span id="quick-count-3" class="quick-count"></span></span></button>
+      <button id="quick-4" type="button" disabled><span class="quick-key">5</span><span class="quick-art"><i id="quick-icon-4" class="quick-icon" style="--item-slot:4" aria-hidden="true" hidden></i><span id="quick-count-4" class="quick-count"></span></span></button>
+      <button id="quick-5" type="button" disabled><span class="quick-key">6</span><span class="quick-art"><i id="quick-icon-5" class="quick-icon" style="--item-slot:5" aria-hidden="true" hidden></i><span id="quick-count-5" class="quick-count"></span></span></button>
+      <button id="quick-6" type="button" disabled><span class="quick-key">7</span><span class="quick-art"><i id="quick-icon-6" class="quick-icon" style="--item-slot:6" aria-hidden="true" hidden></i><span id="quick-count-6" class="quick-count"></span></span></button>
+      <button id="quick-7" type="button" disabled><span class="quick-key">8</span><span class="quick-art"><i id="quick-icon-7" class="quick-icon" style="--item-slot:7" aria-hidden="true" hidden></i><span id="quick-count-7" class="quick-count"></span></span></button>
+      <button id="quick-8" type="button" disabled><span class="quick-key">9</span><span class="quick-art"><i id="quick-icon-8" class="quick-icon" style="--item-slot:8" aria-hidden="true" hidden></i><span id="quick-count-8" class="quick-count"></span></span></button>
+      <button id="quick-9" type="button" disabled><span class="quick-key">0</span><span class="quick-art"><i id="quick-icon-9" class="quick-icon" style="--item-slot:9" aria-hidden="true" hidden></i><span id="quick-count-9" class="quick-count"></span></span></button>
+    </nav>
+    <section class="controls" aria-label="游戏操作">
+      <div id="joystick" class="dpad" role="group" aria-label="四向摇杆，长按移动，滑动切换方向">
+        <button data-key="38" class="up" aria-label="向上"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></span></button>
+        <button data-key="37" class="left" aria-label="向左"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></span></button>
+        <button data-key="39" class="right" aria-label="向右"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></span></button>
+        <button data-key="40" class="down" aria-label="向下"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></span></button>
+      </div>
+      <button data-key="27" class="back" aria-label="菜单 / 返回" title="菜单 / 返回（Esc）"><span>菜单</span></button>
+      <button data-key="41" class="confirm" aria-label="确认" title="确认（Enter）"><span>确认</span></button>
+    </section>
+    <aside class="keyboard-help" aria-label="电脑键盘操作说明">
+      <header class="keyboard-heading"><span class="desktop-label">键盘冒险</span><h1>魔塔 <span>50</span></h1></header>
+      <dl class="keyboard-bindings">
+        <div><dt>移动</dt><dd><kbd>WASD</kbd><span class="key-or">或</span><kbd>↑ ↓ ← →</kbd></dd></div>
+        <div><dt>确认</dt><dd><kbd>Enter</kbd><kbd>空格</kbd><kbd>Z</kbd></dd></div>
+        <div><dt>菜单 / 返回</dt><dd><kbd>Esc</kbd><kbd>X</kbd></dd></div>
+        <div><dt>怪物手册</dt><dd><kbd>B</kbd><span class="key-detail">打开 / 关闭</span></dd></div>
+        <div><dt>记事本</dt><dd><kbd>N</kbd><span class="key-detail">选择记录阅读</span></dd></div>
+        <div><dt>保存 / 读取</dt><dd><kbd>F5</kbd><span class="key-or">/</span><kbd>F9</kbd></dd></div>
+        <div><dt>上一层 / 下一层</dt><dd><kbd>PgUp</kbd><span class="key-or">/</span><kbd>PgDn</kbd></dd></div>
+        <div><dt>快捷道具</dt><dd><kbd>1–9</kbd><kbd>0</kbd></dd></div>
+      </dl>
+    </aside>
+  </main>
+
+</body>
+</html>
