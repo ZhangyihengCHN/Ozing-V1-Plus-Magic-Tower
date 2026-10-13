@@ -98,7 +98,7 @@ docker compose up -d --build
 | `prepare-assets.py` / `extraction.json` | 本地资源提取及校验 |
 | `build.py` | Clang 编译并内嵌压缩 WASM |
 | `package.py` / `Dockerfile` | 静态与容器部署包 |
-| `test-*.cjs` / `tools/test.mjs` | 无浏览器自动化的回归测试及运行入口 |
+| `tests/` / `tools/test.mjs` | 集中存放回归测试及运行入口 |
 
 `game.js`、`game-data.js`、`game.wasm`、`save-crypto.bundle.js` 是生成文件。源码直接维护已适配的 `native/`，不依赖另一个模拟器仓库，也不需要从父目录复制补丁。
 
@@ -113,5 +113,7 @@ npm test
 ```
 
 完整回归按依赖顺序运行 18 套测试，涵盖新游戏、监狱剧情、地下室、道具限制、飞行、商店、手册、记事本、攻击显示、长按输入、三槽存档、认证加密、旧存档迁移与失败回退、加载解压及静态服务器范围。测试生成的快照与报告只写入被忽略的 `verification/`，不使用个人存档，也不提交这些资源派生文件。
+
+测试脚本统一放在 `tests/`，运行命令仍为 `npm test` 和 `npm run test:crypto`。单独检查可使用 `node tests/test-core.cjs`；依赖其他测试快照的用例请通过完整测试入口运行。
 
 `docs/github-actions.yml` 是可选 GitHub Actions 模板：只检查源码公开范围、Web 构建、认证加密与 Python 语法，不获取原厂资源。模板未自动启用；需要时可在 GitHub 网页将其内容保存为 `.github/workflows/source-checks.yml`，或使用具备工作流写入权限的凭据提交。未宣称已手工通关全部 50 层。

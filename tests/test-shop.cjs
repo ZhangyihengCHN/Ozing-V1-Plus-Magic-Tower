@@ -1,9 +1,10 @@
+const projectRoot = require('./setup.cjs');
 // Private fixtures exercise the original firmware economy, never player saves.
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 async function main() {
-  const {instance} = await WebAssembly.instantiate(fs.readFileSync(path.join(__dirname,'game.wasm')));
+  const {instance} = await WebAssembly.instantiate(fs.readFileSync(path.join(projectRoot,'game.wasm')));
   const e = instance.exports;
   const check = () => assert.equal(e.emu_last_error(),0,`ARM error ${e.emu_last_error_pc().toString(16)}`);
   const key = k => {assert.equal(e.emu_key(k),1);e.emu_paint();check();};
@@ -60,7 +61,7 @@ async function main() {
     'direction selection and confirmation','original price increases and gold deductions',
     'upgrades survive save / load','insufficient gold dialogue','movement after closing','100 reopen / cancel / save cycles',
     'original firmware background colour','stable popup redraw without Web selection overlay'];
-  fs.writeFileSync(path.join(__dirname,'verification/shop-fixture.json'),JSON.stringify({format:'hjx-magic-tower-portrait-v1',version:1,data:fixture(4).toString('base64')}));
+  fs.writeFileSync(path.join(projectRoot,'verification/shop-fixture.json'),JSON.stringify({format:'hjx-magic-tower-portrait-v1',version:1,data:fixture(4).toString('base64')}));
   load(fixture(4));open();
   const pixels=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);
   assert.equal(pixels[45*240+45],0xebebeb,'firmware WM_ERASEBKGND uses its original system colour');
@@ -71,8 +72,8 @@ async function main() {
   for(let i=0;i<pixels.length;i++){
     rgba[i*4]=pixels[i]>>>16;rgba[i*4+1]=pixels[i]>>>8;rgba[i*4+2]=pixels[i];rgba[i*4+3]=255;
   }
-  fs.writeFileSync(path.join(__dirname,'verification/shop-fixed.rgba'),rgba);
-  fs.writeFileSync(path.join(__dirname,'verification/shop.json'),JSON.stringify({result:'PASS',checks},null,2)+'\n');
+  fs.writeFileSync(path.join(projectRoot,'verification/shop-fixed.rgba'),rgba);
+  fs.writeFileSync(path.join(projectRoot,'verification/shop.json'),JSON.stringify({result:'PASS',checks},null,2)+'\n');
   console.log(JSON.stringify({result:'PASS',checks},null,2));
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

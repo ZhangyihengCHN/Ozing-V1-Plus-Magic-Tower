@@ -1,3 +1,4 @@
+const projectRoot = require('./setup.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),http=require('node:http'),net=require('node:net'),{spawn}=require('node:child_process');
 (async()=>{
  const probe=net.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));

@@ -1,11 +1,12 @@
+const projectRoot = require('./setup.cjs');
 // Verify native popup drawing and real firmware combat frames, using private saves.
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const assert=require('node:assert/strict');
 async function main(){
-  const {instance}=await WebAssembly.instantiate(fs.readFileSync(path.join(__dirname,'game.wasm')));
-  const e=instance.exports,root=path.join(__dirname,'verification');
+  const {instance}=await WebAssembly.instantiate(fs.readFileSync(path.join(projectRoot,'game.wasm')));
+  const e=instance.exports,root=path.join(projectRoot,'verification');
   const check=()=>assert.equal(e.emu_last_error(),0,`ARM error at ${e.emu_last_error_pc().toString(16)}`);
   const key=k=>{assert.equal(e.emu_key(k),1);e.emu_paint();check();};
   const touch=(x,y)=>{assert.equal(e.web_touch(x,y),1);e.emu_paint();check();};
@@ -21,7 +22,7 @@ async function main(){
     assert.equal(e.emu_save_import(e.web_scratch(),b.length),1);key(40);key(41);};
   // Compare real map stairs with the original bitmap, rather than substitute
   // artwork. Downstairs (tile 7) intentionally has the vertical railing lines.
-  const atlas=fs.readFileSync(path.join(__dirname,'assets/bmp00.bin'));
+  const atlas=fs.readFileSync(path.join(projectRoot,'assets/bmp00.bin'));
   const atlasOffset=atlas.readUInt32LE(10),atlasStride=(atlas.readInt32LE(18)+3)&~3;
   for(const [floor,tile,x,y] of [[1,6,0,0],[2,7,0,0],[3,7,0,10]]){
     const b=Buffer.from(base);b[5]=floor;load(b);

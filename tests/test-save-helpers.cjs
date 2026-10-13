@@ -1,9 +1,10 @@
+const projectRoot = require('./setup.cjs');
 // Private fixtures: exercise the real codec without exposing it in the Web API.
 const fs=require('node:fs'),vm=require('node:vm');
 const scope={Uint8Array,Uint32Array,DataView,ArrayBuffer,Date,Math,JSON,Error,
   crypto:require('node:crypto').webcrypto,
   atob:s=>Buffer.from(s,'base64').toString('binary'),btoa:s=>Buffer.from(s,'binary').toString('base64')};
-vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'save-crypto.bundle.js'),'utf8'),scope);
+vm.runInNewContext(fs.readFileSync(require('node:path').join(projectRoot,'save-crypto.bundle.js'),'utf8'),scope);
 const codec=scope.SaveCrypto;
 const seal=save=>save.version===2?codec.envelope(save):codec.seal(new Uint8Array(Buffer.from(save.data,'base64')),save.savedAt);
 function open(save){

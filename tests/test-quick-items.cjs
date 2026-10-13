@@ -1,3 +1,4 @@
+const projectRoot = require('./setup.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 (async()=>{
  const e=(await WebAssembly.instantiate(fs.readFileSync('game.wasm'))).instance.exports;

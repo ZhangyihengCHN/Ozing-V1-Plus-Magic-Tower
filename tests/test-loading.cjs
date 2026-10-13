@@ -1,8 +1,9 @@
+const projectRoot = require('./setup.cjs');
 // Verify the delivered loader and compressed resources, independent of rendering.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),zlib=require('node:zlib'),crypto=require('node:crypto'),assert=require('node:assert/strict');
-const source=fs.readFileSync(path.join(__dirname,'game.js'),'utf8');
+const source=fs.readFileSync(path.join(projectRoot,'game.js'),'utf8');
 const fallback=vm.runInNewContext('('+source.slice(source.indexOf('function inflateGzip('),source.indexOf('  async function gameBytes()'))+')',{Uint8Array,Uint32Array,DataView,Map,Array,Error});
-const wasm=fs.readFileSync(path.join(__dirname,'game.wasm')),text=fs.readFileSync(path.join(__dirname,'game-data.js'),'utf8');
+const wasm=fs.readFileSync(path.join(projectRoot,'game.wasm')),text=fs.readFileSync(path.join(projectRoot,'game-data.js'),'utf8');
 const pack=JSON.parse(text.slice('window.MAGIC_TOWER_PACK='.length).trim().slice(0,-1));
 assert.deepEqual(zlib.gunzipSync(Buffer.from(pack.data,'base64')),wasm);
 assert.deepEqual(Buffer.from(fallback(Buffer.from(pack.data,'base64'),wasm.length)),wasm,'legacy fallback decodes exact shipped WASM');
@@ -24,7 +25,7 @@ class Element{
 async function main(){
  const e=(await WebAssembly.instantiate(wasm)).instance.exports,checks=[];
  for(const mode of ['http','file','fallback','failed','truncated']){
-  const stages=[],ids=[...fs.readFileSync(path.join(__dirname,'index.html'),'utf8').matchAll(/id="([^"]+)"/g)].map(m=>m[1]),els=Object.fromEntries(ids.map(id=>[id,new Element(id,stages)]));
+  const stages=[],ids=[...fs.readFileSync(path.join(projectRoot,'index.html'),'utf8').matchAll(/id="([^"]+)"/g)].map(m=>m[1]),els=Object.fromEntries(ids.map(id=>[id,new Element(id,stages)]));
   els['loading-retry'].hidden=true;els.screen.getContext=()=>({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){}});
   const controls=[38,37,39,40,27,41,66].map(k=>{const b=new Element('key-'+k,stages);b.dataset.key=String(k);return b;}),dirs=controls.slice(0,4);
   els.joystick.querySelectorAll=()=>dirs;els.joystick.contains=b=>dirs.includes(b);
@@ -54,6 +55,6 @@ async function main(){
   }
  }
  const record={result:'PASS',checks:['exact shipped gzip and WASM equality','stored / fixed / dynamic DEFLATE','CRC corruption and wrong length rejected',...checks],rawWasmBytes:wasm.length,resourceBytes:Buffer.byteLength(text),gzipTransferBytes:zlib.gzipSync(text,{level:9}).length,previousTransferBytes:3650953};
- fs.writeFileSync(path.join(__dirname,'verification','loading.json'),JSON.stringify(record,null,2));console.log(JSON.stringify(record,null,2));
+ fs.writeFileSync(path.join(projectRoot,'verification','loading.json'),JSON.stringify(record,null,2));console.log(JSON.stringify(record,null,2));
 }
 main().catch(err=>{console.error(err);process.exitCode=1;});

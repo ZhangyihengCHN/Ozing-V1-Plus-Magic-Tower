@@ -1,3 +1,4 @@
+const projectRoot = require('./setup.cjs');
 const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
 const {codec}=require('./test-save-helpers.cjs');
 const bytes=new Uint8Array(6304);for(let i=0;i<bytes.length;i++)bytes[i]=(i*17)&255;

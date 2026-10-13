@@ -1,3 +1,4 @@
+const projectRoot = require('./setup.cjs');
 // Exercise the actual slot UI/storage callbacks with the original WASM runtime.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {seal,open:openSave}=require('./test-save-helpers.cjs');

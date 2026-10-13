@@ -1,7 +1,8 @@
+const projectRoot = require('./setup.cjs');
 // Check actual firmware pickup messages; use only private test saves.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 async function main(){
- const e=(await WebAssembly.instantiate(fs.readFileSync(path.join(__dirname,'game.wasm')))).instance.exports;
+ const e=(await WebAssembly.instantiate(fs.readFileSync(path.join(projectRoot,'game.wasm')))).instance.exports;
  const check=()=>assert.equal(e.emu_last_error(),0,e.emu_last_error_pc().toString(16));
  const key=k=>{e.emu_key(k);e.emu_paint();check();};
  const save=()=>{assert.equal(e.web_checkpoint(),1);e.emu_save_export(e.web_scratch(),8192);return Buffer.from(new Uint8Array(e.memory.buffer,e.web_scratch(),6304));};
@@ -17,7 +18,7 @@ async function main(){
   assert.deepEqual(save(),acquired,'repainting never duplicates pickup or changes the save');
   const fixture={format:'hjx-magic-tower-portrait-v1',version:1,data:b.toString('base64')};
   if(name==='iron sword'){
-   fs.writeFileSync(path.join(__dirname,'verification','pickup-fixture.json'),JSON.stringify(fixture));
+   fs.writeFileSync(path.join(projectRoot,'verification','pickup-fixture.json'),JSON.stringify(fixture));
    const p=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);proof=Buffer.alloc(p.length*4);
    for(let i=0;i<p.length;i++){proof[i*4]=p[i]>>>16;proof[i*4+1]=p[i]>>>8;proof[i*4+2]=p[i];proof[i*4+3]=255;}
   }
@@ -25,7 +26,7 @@ async function main(){
   load(acquired);assert.deepEqual(bar(),empty,'loading clears transient messages');
   checks.push(name+' pickup, repaint, original stats, save and message clearing');
  }
- fs.writeFileSync(path.join(__dirname,'verification','pickup-native.rgba'),proof);
- const report={result:'PASS',checks};fs.writeFileSync(path.join(__dirname,'verification','notice.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+ fs.writeFileSync(path.join(projectRoot,'verification','pickup-native.rgba'),proof);
+ const report={result:'PASS',checks};fs.writeFileSync(path.join(projectRoot,'verification','notice.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 }
 main().catch(err=>{console.error(err);process.exitCode=1;});

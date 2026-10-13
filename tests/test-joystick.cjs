@@ -1,3 +1,4 @@
+const projectRoot = require('./setup.cjs');
 // Exercise the shipped input code against the real game core with a minimal DOM.
 // The empty first-floor test fixture isolates input from walls and encounters.
 const fs = require('node:fs');
@@ -27,14 +28,14 @@ class Element {
   getBoundingClientRect() { return {left:0,top:0,width:144,height:144}; }
 }
 async function main() {
-  const wasm=fs.readFileSync(path.join(__dirname,'game.wasm'));
+  const wasm=fs.readFileSync(path.join(projectRoot,'game.wasm'));
   const {instance}=await WebAssembly.instantiate(wasm),e=instance.exports;
   e.emu_init(); e.emu_key(41); e.emu_key(41); e.web_checkpoint();
   e.emu_save_export(e.web_scratch(),8192);
   const bytes=Buffer.from(new Uint8Array(e.memory.buffer,e.web_scratch(),6304));
   bytes.fill(0,254,254+121); bytes.writeUInt32LE(5,0x76); bytes.writeUInt32LE(5,0x7a);
   const fixture={format:STORE,version:1,data:bytes.toString('base64')};
-  const ids=Array.from(fs.readFileSync(path.join(__dirname,'index.html'),'utf8').matchAll(/id="([^"]+)"/g),m=>m[1]);
+  const ids=Array.from(fs.readFileSync(path.join(projectRoot,'index.html'),'utf8').matchAll(/id="([^"]+)"/g),m=>m[1]);
   const els=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
   for(const id of ['menu','paused','save-picker','save-overwrite','save-picker-error','save-auto'])els[id].hidden=true;
   const controls=[38,37,39,40,27,41,66].map(key=>{const el=new Element('key-'+key);el.dataset.key=String(key);return el;});
@@ -62,7 +63,7 @@ async function main() {
     Uint8Array,Uint32Array,DataView,Date,Map,Set,JSON,Math,Error,setTimeout,
     WebAssembly:{instantiate:async data=>{const r=await WebAssembly.instantiate(data);core=r.instance.exports;return r;}}};
   win.MAGIC_TOWER_WASM=wasm.toString('base64');
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'game.js'),'utf8'),scope,{filename:'game.js'});
+  vm.runInNewContext(fs.readFileSync(path.join(projectRoot,'game.js'),'utf8'),scope,{filename:'game.js'});
   for(let n=0;n<100&&!frame;n++) await new Promise(resolve=>setTimeout(resolve,10));
   assert.ok(frame,'game finished booting');
   const bookButton=controls.find(el=>el.dataset.key==='66');
@@ -236,7 +237,7 @@ async function main() {
   checks.push('toolbar follows combat, ownership, dialog, and return to map');
   assert.equal(core.emu_last_error(),0);
   const report={result:'PASS',checks};
-  fs.writeFileSync(path.join(__dirname,'verification','joystick.json'),JSON.stringify(report,null,2)+'\n');
+  fs.writeFileSync(path.join(projectRoot,'verification','joystick.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
 }
 main().catch(err=>{console.error(err);process.exitCode=1;});

@@ -1,3 +1,4 @@
+const projectRoot = require('./setup.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {seal,open:openSave}=require('./test-save-helpers.cjs');
 const STORE='hjx-magic-tower-portrait-v1',SLOTS='hjx-magic-tower-portrait-slots-v1',MARK='hjx-magic-tower-save-security-v2';

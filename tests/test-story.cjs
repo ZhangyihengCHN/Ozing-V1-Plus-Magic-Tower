@@ -1,3 +1,4 @@
+const projectRoot = require('./setup.cjs');
 // Real ARM story events must not wait for the next physical direction key.
 const fs=require('node:fs'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 async function main(){
