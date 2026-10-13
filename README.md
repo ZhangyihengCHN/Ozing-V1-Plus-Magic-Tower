@@ -19,9 +19,9 @@
 
 ## 界面预览
 
-| 手机竖屏 | 电脑键盘游玩 |
+| 手机竖屏 · GIF 演示 | 电脑键盘游玩 |
 | :---: | :---: |
-| <img src="docs/images/mobile-gameplay.jpg" alt="手机竖屏游戏画面，包含快捷道具栏和四向摇杆" width="234"> | <img src="docs/images/desktop-gameplay.jpg" alt="电脑游戏画面，右侧显示键盘操作说明和辅助按钮" width="720"> |
+| <img src="docs/images/mobile-gameplay.gif" alt="手机端实际操作演示：摇杆移动、按钮高亮与三槽存档" width="234"> | <img src="docs/images/desktop-gameplay.jpg" alt="电脑游戏画面，右侧显示键盘操作说明和辅助按钮" width="720"> |
 
 ## 特色
 

@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 const names = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
 if (!names.length) throw new Error('No tracked source files found');
 const previews = new Set(['docs/images/mobile-gameplay.jpg', 'docs/images/desktop-gameplay.jpg']);
+const demo = 'docs/images/mobile-gameplay.gif';
 const allowed = name => /^(native\/.*\.(?:c|h|inc|s)|tools\/.*\.mjs|\.github\/workflows\/.*\.yml|docker\/nginx\.conf|assets\/README\.md|tests\/(?:test-[\w-]+|setup)\.cjs)$/.test(name) || [
   '.gitignore', '.dockerignore', '.gitattributes', 'LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'docs/github-actions.yml', 'docs/DEVELOPMENT.md',
   'CONTRIBUTING.md', 'SECURITY.md', 'Dockerfile', 'compose.yaml', 'index.html', 'style.css',
@@ -12,6 +13,12 @@ const allowed = name => /^(native\/.*\.(?:c|h|inc|s)|tools\/.*\.mjs|\.github\/wo
   'prepare_assets.py', 'package.py', 'extraction.json', 'package.json', 'package-lock.json', 'serve.cjs'
 ].includes(name);
 for (const name of names) {
+  if (name === demo) {
+    const bytes = await fs.readFile(name);
+    if (bytes.length < 14 || bytes.length > 4 * 1024 * 1024 || bytes.subarray(0, 6).toString('ascii') !== 'GIF89a' || bytes[bytes.length - 1] !== 0x3b)
+      throw new Error(`Expected a small GIF gameplay demo: ${name}`);
+    continue;
+  }
   if (previews.has(name)) {
     const bytes = await fs.readFile(name);
     if (bytes.length < 4 || bytes.length > 1024 * 1024 || bytes.readUInt16BE(0) !== 0xffd8 || bytes.readUInt16BE(bytes.length - 2) !== 0xffd9)
