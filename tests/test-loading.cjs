@@ -15,7 +15,7 @@ for(const input of [Buffer.alloc(8),Buffer.alloc(100000,65),crypto.randomBytes(5
  }
 }
 class Element{
- constructor(id,stages){this.id=id;this.dataset={};this.handlers={};this.hidden=false;this.disabled=true;this.tagName='BUTTON';this.classes=new Set();this.classList={add:c=>this.classes.add(c),remove:c=>this.classes.delete(c),contains:c=>this.classes.has(c)};Object.defineProperty(this,'textContent',{set:v=>{this.text=v;if(id==='loading-stage')stages.push(v);},get:()=>this.text});}
+ constructor(id,stages,details=[]){this.id=id;this.dataset={};this.handlers={};this.hidden=false;this.disabled=true;this.tagName='BUTTON';this.classes=new Set();this.classList={add:c=>this.classes.add(c),remove:c=>this.classes.delete(c),contains:c=>this.classes.has(c)};Object.defineProperty(this,'textContent',{set:v=>{this.text=v;if(id==='loading-stage')stages.push(v);if(id==='loading-detail')details.push(v);},get:()=>this.text});}
  addEventListener(n,f){this.handlers[n]=f;}
  setAttribute(n,v){this[n]=v;}
  removeAttribute(n){delete this[n];}
@@ -24,8 +24,8 @@ class Element{
 }
 async function main(){
  const e=(await WebAssembly.instantiate(wasm)).instance.exports,checks=[];
- for(const mode of ['http','file','fallback','failed','truncated']){
-  const stages=[],ids=[...fs.readFileSync(path.join(projectRoot,'index.html'),'utf8').matchAll(/id="([^"]+)"/g)].map(m=>m[1]),els=Object.fromEntries(ids.map(id=>[id,new Element(id,stages)]));
+ for(const mode of ['http','file','fallback','failed','truncated','cached','uncompressed','unknown']){
+  const stages=[],details=[],ids=[...fs.readFileSync(path.join(projectRoot,'index.html'),'utf8').matchAll(/id="([^"]+)"/g)].map(m=>m[1]),els=Object.fromEntries(ids.map(id=>[id,new Element(id,stages,details)]));
   els['loading-retry'].hidden=true;els.screen.getContext=()=>({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){}});
   const controls=[38,37,39,40,27,41,66].map(k=>{const b=new Element('key-'+k,stages);b.dataset.key=String(k);return b;}),dirs=controls.slice(0,4);
   els.joystick.querySelectorAll=()=>dirs;els.joystick.contains=b=>dirs.includes(b);
@@ -35,11 +35,14 @@ async function main(){
   win.location={protocol:mode==='file'?'file:':'http:',reload(){}};
   doc.head={appendChild(script){offlineReads++;setTimeout(()=>{win.MAGIC_TOWER_PACK=pack;script.onload();},0);}};doc.createElement=()=>new Element('script',stages);
   const body=new TextEncoder().encode(mode==='truncated'?text.slice(0,-5):text);
-  const scope={crypto:require('node:crypto').webcrypto,document:doc,window:win,performance:{now:()=>0},requestAnimationFrame:()=>{booted=true;},localStorage:{getItem:()=>null,setItem(){}},
+  const encodedSize=mode==='uncompressed'?body.length:zlib.gzipSync(body).length;
+  const transferSize=mode==='cached'?0:encodedSize+300;
+  const perf={now:()=>0};if(mode!=='unknown')perf.getEntriesByName=()=>[{decodedBodySize:body.length,encodedBodySize:encodedSize,transferSize}];
+  const scope={crypto:require('node:crypto').webcrypto,document:doc,window:win,performance:perf,requestAnimationFrame:()=>{booted=true;},localStorage:{getItem:()=>null,setItem(){}},
    Uint8Array,Uint32Array,DataView,Date,Map,Set,JSON,Math,Error,Blob,Response,setTimeout,console,
    DecompressionStream:mode==='fallback'?undefined:DecompressionStream,
    atob:s=>Buffer.from(s,'base64').toString('binary'),btoa:s=>Buffer.from(s,'binary').toString('base64'),
-   fetch:async url=>{requests++;assert.equal(url,'game-data.js?v=test');if(mode==='failed')return new Response('',{status:503});let pos=0;const stream=new ReadableStream({pull(controller){if(pos===body.length)return controller.close();const end=Math.min(body.length,pos+123456);controller.enqueue(body.slice(pos,end));pos=end;}});return new Response(stream,{headers:{'Content-Encoding':'gzip','Content-Length':'1'}});},
+   fetch:async url=>{requests++;assert.equal(url,'game-data.js?v=test');if(mode==='failed')return new Response('',{status:503});let pos=0;const stream=new ReadableStream({pull(controller){if(pos===body.length)return controller.close();const end=Math.min(body.length,pos+123456);controller.enqueue(body.slice(pos,end));pos=end;}});const response=new Response(stream,{headers:mode==='unknown'?{}:mode==='uncompressed'?{'Content-Length':String(body.length)}:{'Content-Encoding':'gzip','Content-Length':String(encodedSize)}});Object.defineProperty(response,'url',{value:'http://localhost/game-data.js?v=test'});return response;},
    WebAssembly:{instantiate:async bytes=>{assert.deepEqual(Buffer.from(bytes),wasm,'all paths initialize exact native runtime');return{instance:{exports:e}};}}};
   vm.runInNewContext(source,scope,{filename:'game.js'});
   for(let n=0;n<500&&!booted&&els['loading-retry'].hidden;n++)await new Promise(resolve=>setTimeout(resolve,10));
@@ -50,7 +53,13 @@ async function main(){
    assert.ok(booted,mode+' boots');assert.equal(els.loading.hidden,true);assert.equal(els.import.disabled,false);
    assert.ok(stages.includes('解压游戏资源'));assert.ok(stages.includes('启动原版游戏'));assert.ok(stages.includes('读取本地存档'));
    if(mode==='file'){assert.equal(requests,0);assert.equal(offlineReads,1);assert.ok(stages.includes('读取本地游戏资源'));}
-   else{assert.equal(offlineReads,0);assert.ok(stages.includes('下载游戏资源 100%'));assert.ok(stages.some(s=>/^下载游戏资源 (?:[1-9]|[1-9][0-9])%$/.test(s)),'progress follows streamed decoded bytes, not gzip Content-Length');}
+   else{
+    assert.equal(offlineReads,0);assert.ok(stages.includes('读取游戏资源 100%'));assert.ok(stages.some(s=>/^读取游戏资源 (?:[1-9]|[1-9][0-9])%$/.test(s)),'progress follows streamed decoded bytes, not gzip Content-Length');
+    assert.ok(details.some(s=>s.includes('MiB（解码后）')));assert.ok(details.every(s=>!s.includes(' MB ')),'binary sizes must not be labelled MB');
+    if(mode==='cached')assert.ok(details.some(s=>s.includes('来自浏览器缓存，无网络下载')));
+    else if(mode==='unknown')assert.ok(details.every(s=>!s.includes('本次 HTTP 传输')&&!s.includes('压缩文件大小')),'unknown network sizes are not guessed');
+    else assert.ok(details.some(s=>s.includes('本次 HTTP 传输 '+(transferSize/1048576).toFixed(2)+' MiB')));
+   }
    checks.push(mode+' loading progress, decompression, native startup and local save check');
   }
  }

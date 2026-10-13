@@ -39,6 +39,8 @@ python package.py
 
 将 `dist/magic-tower-cloudflare-pages.zip` 上传到 [Cloudflare Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)。ZIP 根目录就是网站文件，无需在线构建。请上传这个包，不要把整个源码目录当静态站点公开。资源 URL 带内容哈希，更新包时缓存可重新校验。
 
+默认发行流程只制作 Cloudflare Pages 包，不自动制作 Docker 包或镜像。加载进度显示解码后的资源读取量，单位为 MiB；压缩文件大小与本次 HTTP 传输量分开显示，命中浏览器缓存时明确标注。浏览器未提供传输统计时不估算下载流量。
+
 Docker：
 
 ```sh

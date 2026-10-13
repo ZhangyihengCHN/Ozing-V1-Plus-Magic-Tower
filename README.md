@@ -45,7 +45,7 @@ python build.py
 npm start
 ```
 
-打开 `http://localhost:8765`。构建后也可直接打开 `index.html`，或打包部署到 Cloudflare Pages / Docker，详见 [开发与部署](docs/DEVELOPMENT.md)。
+打开 `http://localhost:8765`。构建后也可直接打开 `index.html`；运行 `python package.py` 打包部署到 Cloudflare Pages，详见 [开发与部署](docs/DEVELOPMENT.md)。
 
 ## 文档与许可
 

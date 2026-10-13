@@ -11,14 +11,16 @@ class Element {
   constructor(id) {
     this.id=id; this.handlers={}; this.hidden=false; this.disabled=false;
     this.textContent=''; this.dataset={}; this.tagName='BUTTON';
-    this.children=[];
+    this.children=[];this.captured=new Set();this.failCapture=false;
     const classes=new Set(),styles=new Map();
     this.classList={add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c)};
     this.style={setProperty:(k,v)=>styles.set(k,v),removeProperty:k=>styles.delete(k),getPropertyValue:k=>styles.get(k)||''};
   }
   addEventListener(name,cb) { (this.handlers[name]||=[]).push(cb); }
   fire(name,values={}) { for(const cb of this.handlers[name]||[]) cb({target:this,preventDefault(){},...values}); }
-  setPointerCapture() {}
+  setPointerCapture(id) { if(this.failCapture)throw new Error('capture unavailable');this.captured.add(id); }
+  hasPointerCapture(id) { return this.captured.has(id); }
+  releasePointerCapture(id) { this.captured.delete(id);this.fire('lostpointercapture',{pointerId:id}); }
   setAttribute(name,value) { this[name]=value; }
   append(...children) { this.children.push(...children); }
   replaceChildren(...children) { this.children=children; }
@@ -129,6 +131,18 @@ async function main() {
   for(const name of ['pointercancel','lostpointercapture']) {
     reset();pointer('pointerdown',20,72);pointer(name,20,72);const stopped=pos();advance(600);assert.deepEqual(pos(),stopped);checks.push(name+' stops');
   }
+  for(const name of ['pointerup','pointercancel','lostpointercapture']){
+    reset();pointer('pointerdown',20,72);win.fire(name,{pointerId:1});const stopped=pos();advance(600);
+    assert.deepEqual(pos(),stopped);assert.equal(pad.hasPointerCapture(1),false);assert.equal(pad.querySelectorAll('.pressed').length,0);
+    checks.push('window '+name+' ends the captured gesture');
+  }
+  reset();pointer('pointerdown',20,72);pointer('pointermove',20,72,1);pad.fire('pointermove',{pointerId:1,clientX:124,clientY:72,buttons:0});const hovered=pos();advance(600);assert.deepEqual(pos(),hovered);assert.equal(pad.hasPointerCapture(1),false);checks.push('released-button hover cannot leave movement held');
+  reset();pointer('pointerdown',20,72);pad.captured.clear();const lostSilently=pos();advance(600);assert.deepEqual(pos(),lostSilently);assert.equal(pad.querySelectorAll('.pressed').length,0);checks.push('silent capture loss is detected before the next repeat');
+  reset();pointer('pointerdown',20,72);win.fire('pointerup',{pointerId:99});assert.equal(pad.hasPointerCapture(1),true);pointer('pointerup',20,72);checks.push('unrelated pointer release does not end the active gesture');
+  for(const [name,extra] of [['touchend',{touches:[]}],['touchcancel',{}],['pagehide',{}]]){
+    reset();pointer('pointerdown',20,72);win.fire(name,extra);const stopped=pos();advance(600);assert.deepEqual(pos(),stopped);assert.equal(pad.hasPointerCapture(1),false);checks.push(name+' fallback stops movement');
+  }
+  reset();pad.failCapture=true;pointer('pointerdown',20,72);assert.deepEqual(pos(),[5,5]);pad.failCapture=false;pointer('pointerdown',20,72);assert.deepEqual(pos(),[4,5]);pointer('pointerup',20,72);checks.push('failed pointer capture is cancelled and the next gesture works');
   reset();pointer('pointerdown',124,72);win.fire('blur');const blurred=pos();advance(600);assert.deepEqual(pos(),blurred);checks.push('window blur stops');
   reset();pointer('pointerdown',124,72);controls.find(el=>el.dataset.key==='27').fire('click',{detail:0});const paused=pos();advance(600);assert.deepEqual(pos(),paused);
   pointer('pointerdown',72,20);advance(500);assert.deepEqual(pos(),paused);els['menu-resume'].fire('click');advance(500);assert.deepEqual(pos(),paused);checks.push('menu and resume do not leave movement held');
@@ -233,6 +247,9 @@ async function main() {
   pointer('pointerdown',72,20);const near=[core.emu_x(),core.emu_y()];assert.deepEqual(near,[1,10]);els['fly-up'].fire('click');assert.equal(core.emu_floor(),4);const landed=pos();advance(1000);assert.deepEqual(pos(),landed,'flight releases the held direction');pointer('pointerup',72,20);
   controls.find(el=>el.dataset.key==='27').fire('click',{detail:0});assert.equal(els['fly-up'].disabled,true);assert.equal(els['fly-down'].disabled,true);controls.find(el=>el.dataset.key==='41').fire('click',{detail:0});
   const beforeRepeat=core.emu_floor();doc.fire('keydown',{key:'PageDown',repeat:true});assert.equal(core.emu_floor(),beforeRepeat);
+  let prevented=0;const focusedFly=els['fly-down'];focusedFly.matches=()=>true;
+  doc.fire('keydown',{key:'Enter',repeat:true,target:focusedFly,preventDefault(){prevented++;}});
+  assert.equal(prevented,1,'focused floor buttons suppress native keyboard auto-repeat');assert.equal(core.emu_floor(),beforeRepeat);
   checks.push('toolbar and PageUp/PageDown flight switch floors directly, reject key repeat, dim while paused, and clear joystick hold');
   checks.push('toolbar follows combat, ownership, dialog, and return to map');
   assert.equal(core.emu_last_error(),0);

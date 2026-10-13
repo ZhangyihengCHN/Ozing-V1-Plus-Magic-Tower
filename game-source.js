@@ -94,8 +94,13 @@
     } catch (err) { error(err); }
   }
   function release() {
+    const pointer = joystickPointer;
     held = null; joystickPointer = null;
     document.querySelectorAll('.pressed').forEach(button => button.classList.remove('pressed'));
+    // Clear state before releasing capture: lostpointercapture may re-enter.
+    if(pointer!==null && joystick.hasPointerCapture?.(pointer)){
+      try{joystick.releasePointerCapture(pointer);}catch(_){}
+    }
   }
   function hold(key, button) {
     release(); act(key);
@@ -335,6 +340,7 @@
     if(!value)focusGame();
   }
   function frame(now) {
+    if(joystickPointer!==null && joystick.hasPointerCapture && !joystick.hasPointerCapture(joystickPointer))release();
     if(slotMode && !document.hidden && held!==null && now>=repeatAt){act(held);repeatAt=now+180;}
     if (core && !paused && !document.hidden) {
       const elapsed = Math.min(Math.max(now-last,0),100);
@@ -394,17 +400,21 @@
     button.classList.add('pressed');
   }
   joystick.addEventListener('pointerdown',event => {
+    if(joystickPointer!==null && joystick.hasPointerCapture && !joystick.hasPointerCapture(joystickPointer))release();
     if(!core || !gameReady || !slotMode && (paused || core.web_busy()) || joystickPointer!==null || !event.isPrimary) return;
     event.preventDefault(); release(); joystickPointer=event.pointerId;
-    joystick.setPointerCapture(event.pointerId); joystickDirection(event);
+    try{joystick.setPointerCapture(event.pointerId);}catch(_){release();return;}
+    joystickDirection(event);
   });
   joystick.addEventListener('pointermove',event => {
     if(event.pointerId!==joystickPointer) return;
+    if(event.buttons===0){release();return;}
     event.preventDefault(); joystickDirection(event);
   });
-  for(const name of ['pointerup','pointercancel','lostpointercapture']) {
+  for(const name of ['pointerup','pointercancel']) {
     joystick.addEventListener(name,event => { if(event.pointerId===joystickPointer) release(); });
   }
+  joystick.addEventListener('lostpointercapture',event=>{if(event.pointerId===joystickPointer || event.pointerId===undefined)release();});
   joystick.addEventListener('contextmenu',event => event.preventDefault());
   document.addEventListener('keydown',event => {
     if(event.ctrlKey || event.altKey || event.metaKey || event.target.tagName==='INPUT' ||
@@ -430,7 +440,10 @@
     }
     // Let focused buttons keep their native Enter/Space activation. Otherwise
     // Enter on Close could load a slot, or Enter on Save could reach the game.
-    if(['Enter',' '].includes(event.key) && event.target.matches?.('button:not(.slot-card)')) return;
+    if(['Enter',' '].includes(event.key) && event.target.matches?.('button:not(.slot-card)')) {
+      if(event.repeat)event.preventDefault();
+      return;
+    }
     if(slotMode){
       if(key!==undefined){event.preventDefault();if(!event.repeat)hold(key,directionButtons.find(button=>Number(button.dataset.key)===key));}
       else if(event.key==='Tab'){
@@ -446,6 +459,12 @@
   });
   document.addEventListener('keyup',event => { if(keyboardKey(event)===held) release(); });
   window.addEventListener('blur',release);
+  // A global fallback also ends a gesture when the original target loses it.
+  for(const name of ['pointerup','pointercancel','lostpointercapture']){
+    window.addEventListener(name,event=>{if(joystickPointer!==null&&event.pointerId===joystickPointer)release();},{capture:true});
+  }
+  window.addEventListener('touchend',event=>{if(joystickPointer!==null&&event.touches?.length===0)release();},{capture:true,passive:true});
+  window.addEventListener('touchcancel',()=>{if(joystickPointer!==null)release();},{capture:true,passive:true});
   window.addEventListener('storage',event => {
     if(event.key===STORE || event.key===SLOT_STORE || event.key===null) {
       syncStored();if(slotMode){overwriteSlot=null;$('save-overwrite').hidden=true;renderSlots();}
@@ -455,7 +474,7 @@
     release(); last = performance.now();
     if(document.hidden && dirty) { try { checkpoint(); } catch(_) {} }
   });
-  window.addEventListener('pagehide',() => { if(dirty) { try { checkpoint(); } catch(_) {} } });
+  window.addEventListener('pagehide',() => { release();if(dirty) { try { checkpoint(); } catch(_) {} } });
   canvas.addEventListener('pointerdown',event => {
     if(!core || !gameReady || paused) return;
     event.preventDefault();
@@ -492,7 +511,7 @@
   $('save-overwrite-confirm').addEventListener('focus',()=>{overwriteConfirm=true;});
   function fly(down){
     if(!core || !gameReady || paused || slotMode || !core.web_can_fly(down))return;
-    try{release();const before=core.emu_floor();core.web_fly(down);refresh();if(core.emu_floor()!==before)dirty=true;}
+    try{release();const before=core.emu_floor();core.web_fly(down);refresh();focusGame();if(core.emu_floor()!==before)dirty=true;}
     catch(err){error(err);}
   }
   $('fly-up').addEventListener('click',()=>fly(0));
@@ -528,6 +547,8 @@
     else $('loading-progress').value = Math.min(100,Math.max(0,progress));
   }
   const yieldPaint = () => new Promise(resolve=>setTimeout(resolve,0));
+  let resourceLoadDetail='';
+  const formatSize=bytes=>bytes<1024?bytes+' B':bytes<1048576?(bytes/1024).toFixed(1)+' KiB':(bytes/1048576).toFixed(2)+' MiB';
   async function resourcePack() {
     if(window.MAGIC_TOWER_PACK) return window.MAGIC_TOWER_PACK;
     if(window.location.protocol==='file:') {
@@ -537,20 +558,33 @@
         script.onload=resolve; script.onerror=()=>reject(new Error('无法读取游戏资源，请保留完整的游戏文件'));
         document.head.appendChild(script);
       });
+      resourceLoadDetail='本地文件读取，无网络下载';
       return window.MAGIC_TOWER_PACK;
     }
-    loading('下载游戏资源','地图 · 贴图 · 字库 · 原版游戏',0);
+    loading('读取游戏资源','地图 · 贴图 · 字库 · 原版游戏',0);
     const response=await fetch(runtimePath);
     if(!response.ok) throw new Error(`资源下载失败（${response.status}），请重试`);
     const total=runtimeSize || (!response.headers.get('Content-Encoding') ? Number(response.headers.get('Content-Length')) : 0);
+    const compressedSize=response.headers.get('Content-Encoding')?Number(response.headers.get('Content-Length')):0;
+    let transferDetail=Number.isSafeInteger(compressedSize)&&compressedSize>0?'压缩文件大小 '+formatSize(compressedSize):'';
     const chunks=[]; let received=0;
-    const show=()=>loading('下载游戏资源'+(total?' '+Math.min(100,Math.floor(received/total*100))+'%':''),
-      '地图、贴图、字库、游戏程序\n已读取 '+(received/1048576).toFixed(2)+(total?' / '+(total/1048576).toFixed(2):'')+' MB 资源',total?received/total*100:null);
+    const show=()=>{
+      resourceLoadDetail='已读取 '+(received/1048576).toFixed(2)+(total?' / '+(total/1048576).toFixed(2):'')+' MiB（解码后）'+(transferDetail?'\n'+transferDetail:'');
+      loading('读取游戏资源'+(total?' '+Math.min(100,Math.floor(received/total*100))+'%':''),resourceLoadDetail,total?received/total*100:null);
+    };
     if(response.body){
       const reader=response.body.getReader();
       while(true){const {value,done}=await reader.read();if(done)break;chunks.push(value);received+=value.byteLength;show();}
     } else {const value=new Uint8Array(await response.arrayBuffer());chunks.push(value);received=value.length;show();}
     if(total&&received!==total) throw new Error('游戏资源未下载完整，请重新加载');
+    await yieldPaint();
+    const entries=response.url?performance.getEntriesByName?.(response.url,'resource'):null;
+    const timing=entries?.[entries.length-1];
+    if(timing?.decodedBodySize===received && timing.encodedBodySize>0){
+      if(timing.transferSize===0)transferDetail='来自浏览器缓存，无网络下载';
+      else if(timing.transferSize>0)transferDetail='本次 HTTP 传输 '+formatSize(timing.transferSize);
+      show();
+    }
     const text=await new Blob(chunks).text(),prefix='window.MAGIC_TOWER_PACK=';
     if(!text.startsWith(prefix)||!text.trimEnd().endsWith(';')) throw new Error('游戏资源格式不正确，请重新加载');
     return JSON.parse(text.slice(prefix.length).trim().slice(0,-1));
@@ -615,7 +649,7 @@
     if(window.MAGIC_TOWER_WASM){const bytes=decode(window.MAGIC_TOWER_WASM);delete window.MAGIC_TOWER_WASM;return bytes;}
     const pack=await resourcePack();delete window.MAGIC_TOWER_PACK;
     if(!pack||pack.format!=='gzip'||!Number.isInteger(pack.bytes)||pack.bytes<8||pack.bytes>16777216||typeof pack.data!=='string')throw new Error('游戏资源格式不正确');
-    loading('解压游戏资源','正在准备地图、贴图、字库和原版程序');await yieldPaint();
+    loading('解压游戏资源',resourceLoadDetail||'正在准备地图、贴图、字库和原版程序');await yieldPaint();
     const compressed=decode(pack.data);
     let bytes;
     try {
