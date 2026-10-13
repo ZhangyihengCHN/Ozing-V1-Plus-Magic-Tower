@@ -57,10 +57,42 @@ async function main() {
   open();touch(120,183);key(40);assert.equal(e.emu_y(),2,'can move after cancelling');
   load(fixture(4,1000000));
   for(let i=0;i<100;i++){open();key(27);save();}
+  // Real merchant offers use a separate modal callback. Cancel must reach
+  // its own hit area rather than being translated to the accept key.
+  const merchantFixture = floor => {
+    const b=Buffer.from(base),map=254+(floor-1)*121;
+    const index=b.subarray(map,map+121).indexOf(0x32);
+    assert.ok(index>=0,'merchant exists on floor '+floor);
+    const dy=index<110?1:-1;
+    b[5]=floor;b.writeUInt32LE(50,9);b.writeUInt32LE(10000,0x52);
+    b.writeUInt32LE(10,0x5a);b.writeUInt32LE(index%11,0x76);
+    b.writeUInt32LE(Math.floor(index/11)+dy,0x7a);b[map+index+11*dy]=0;
+    return b;
+  };
+  const merchantOpen = (floor=28) => {key([15,31].includes(floor)?40:38);assert.equal(e.emu_dialog_active(),1);};
+  for(const floor of [6,7,12,15,28,31,38,39,45,47]) {
+    load(merchantFixture(floor));merchantOpen(floor);key(27);const original=save();
+    merchantOpen(floor);touch(150,188);assert.equal(e.emu_dialog_active(),0,'tap later closes NPC offer on floor '+floor);
+    assert.deepEqual(save(),original,'cancelling preserves gold, keys, items, stats and merchant on floor '+floor);
+    merchantOpen(floor);touch(40,110);assert.equal(e.emu_dialog_active(),1,'tap on NPC text does not accept');
+    touch(150,188);assert.deepEqual(save(),original);
+    merchantOpen(floor);key(27);assert.equal(e.emu_dialog_active(),0);assert.deepEqual(save(),original);
+  }
+  load(merchantFixture(28));merchantOpen();key(27);const beforeSale=save();
+  merchantOpen();touch(88,188);assert.equal(e.emu_dialog_active(),0);
+  const sold=save();assert.equal(sold.readUInt32LE(0x5a),9);assert.equal(sold.readUInt32LE(0x52),10100);
+  load(merchantFixture(28));merchantOpen();key(41);assert.deepEqual(save(),sold,'keyboard accept retains original sale rules');
+  load(merchantFixture(6));merchantOpen(6);touch(88,188);
+  for(let i=0;i<4&&e.emu_dialog_active();i++)key(41);
+  assert.equal(e.emu_dialog_active(),0,'dismiss the original post-purchase information');
+  const bought=save();assert.equal(bought.readUInt32LE(0x52),9950);assert.equal(bought.readUInt32LE(0x5e),1);
+  for(let i=0;i<30;i++){load(beforeSale);merchantOpen();touch(150,188);assert.deepEqual(save(),beforeSale);}
   const checks=['four original shop floors','tap health / attack / defense / leave',
     'direction selection and confirmation','original price increases and gold deductions',
     'upgrades survive save / load','insufficient gold dialogue','movement after closing','100 reopen / cancel / save cycles',
-    'original firmware background colour','stable popup redraw without Web selection overlay'];
+    'original firmware background colour','stable popup redraw without Web selection overlay',
+    'NPC cancel and text taps preserve the full save on ten merchant floors',
+    'original key sale / purchase and keyboard accept / return', '30 NPC cancel and reopen cycles'];
   fs.writeFileSync(path.join(projectRoot,'verification/shop-fixture.json'),JSON.stringify({format:'hjx-magic-tower-portrait-v1',version:1,data:fixture(4).toString('base64')}));
   load(fixture(4));open();
   const pixels=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);

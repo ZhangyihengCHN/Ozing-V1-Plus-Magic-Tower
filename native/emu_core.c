@@ -2999,7 +2999,9 @@ int web_touch(u32 x,u32 y){
  if(web_sleep_ms||web_combat_active())return 1;
  web_notice_active=0;
  if(web_flight_active)return web_flight_touch(x,y);
- if(child.active)return child.modeless||child.callback==0x300cebbcu?child_touch(x,y):emu_key(41);
+ /* NPC offers have distinct accept/cancel hit areas in their ARM callback.
+    A blanket Enter here turns even a tap on "later" into a transaction. */
+ if(child.active)return child.modeless||child.callback==0x300cebbcu||child.callback==0x300c8d98u?child_touch(x,y):emu_key(41);
  int ok=call_arm(emu_profile_current()->app_wndproc,WINDOW,0x201u,0,(y<<16)|x,900000);
  if(ok&&!child.active&&!web_sleep_ms)ok=call_arm(emu_profile_current()->app_wndproc,WINDOW,0x202u,0,(y<<16)|x,900000);
  deliver_child();emu_paint();return ok!=0;
