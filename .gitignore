@@ -1,4 +1,6 @@
 # Original firmware/resources and all generated files stay local.
+/.local/
+/AGENTS.md
 /assets/*
 !/assets/README.md
 /firmware/
