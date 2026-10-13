@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 
 const names = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
 if (!names.length) throw new Error('No tracked source files found');
+const previews = new Set(['docs/images/mobile-gameplay.jpg', 'docs/images/desktop-gameplay.jpg']);
 const allowed = name => /^(native\/.*\.(?:c|h|inc|s)|tools\/.*\.mjs|\.github\/workflows\/.*\.yml|docker\/nginx\.conf|assets\/README\.md|tests\/(?:test-[\w-]+|setup)\.cjs)$/.test(name) || [
   '.gitignore', '.dockerignore', '.gitattributes', 'LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'docs/github-actions.yml', 'docs/DEVELOPMENT.md',
   'CONTRIBUTING.md', 'SECURITY.md', 'Dockerfile', 'compose.yaml', 'index.html', 'style.css',
@@ -11,6 +12,12 @@ const allowed = name => /^(native\/.*\.(?:c|h|inc|s)|tools\/.*\.mjs|\.github\/wo
   'prepare_assets.py', 'package.py', 'extraction.json', 'package.json', 'package-lock.json', 'serve.cjs'
 ].includes(name);
 for (const name of names) {
+  if (previews.has(name)) {
+    const bytes = await fs.readFile(name);
+    if (bytes.length < 4 || bytes.length > 1024 * 1024 || bytes.readUInt16BE(0) !== 0xffd8 || bytes.readUInt16BE(bytes.length - 2) !== 0xffd9)
+      throw new Error(`Expected a small JPEG gameplay preview: ${name}`);
+    continue;
+  }
   if (!allowed(name)) throw new Error(`File outside the public source allowlist: ${name}`);
   const text = await fs.readFile(name, 'utf8');
   for (const pattern of [ /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
@@ -19,4 +26,4 @@ for (const name of names) {
     /(?:\broot@\d{1,3}(?:\.\d{1,3}){3}\b)/
   ]) if (pattern.test(text)) throw new Error(`Private credential or machine path detected: ${name}`);
 }
-console.log(`PASS: ${names.length} tracked source files; no binary resources, generated runtime, save key or personal data`);
+console.log(`PASS: ${names.length} tracked public files; no original resource binaries, generated runtime, save key or personal data`);
