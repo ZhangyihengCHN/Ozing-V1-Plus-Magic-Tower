@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 const names = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', windowsHide: true }).split('\0').filter(Boolean);
 if (!names.length) throw new Error('No tracked source files found');
 const allowed = name => /^(native\/.*\.(?:c|h|inc|s)|tools\/.*\.mjs|\.github\/workflows\/.*\.yml|docker\/nginx\.conf|assets\/README\.md|tests\/(?:test-[\w-]+|setup)\.cjs)$/.test(name) || [
-  '.gitignore', '.dockerignore', '.gitattributes', 'LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'docs/github-actions.yml',
+  '.gitignore', '.dockerignore', '.gitattributes', 'LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'docs/github-actions.yml', 'docs/DEVELOPMENT.md',
   'CONTRIBUTING.md', 'SECURITY.md', 'Dockerfile', 'compose.yaml', 'index.html', 'style.css',
   'game-source.js', 'save-crypto.mjs', 'build-web.mjs', 'build.py', 'prepare-assets.py',
   'prepare_assets.py', 'package.py', 'extraction.json', 'package.json', 'package-lock.json', 'serve.cjs'

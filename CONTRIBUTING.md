@@ -1,6 +1,6 @@
 # 参与开发
 
-请先按 README 准备本地资源并构建。修改 Web 逻辑编辑 `game-source.js`，修改加密编辑 `save-crypto.mjs`，不要直接编辑生成的 `game.js`。原版行为相关修改应保留真实 ARM 程序逻辑，并加入能覆盖问题的回归测试。
+请先按 [开发与部署](docs/DEVELOPMENT.md) 准备本地资源并构建。修改 Web 逻辑编辑 `game-source.js`，修改加密编辑 `save-crypto.mjs`，不要直接编辑生成的 `game.js`。原版行为相关修改应保留真实 ARM 程序逻辑，并加入能覆盖问题的回归测试。
 
 提交前运行 `npm run check:source`；涉及游戏逻辑时先重新构建并运行 `npm test`。测试脚本位于 `tests/`，`tools/test.mjs` 已按测试快照生成顺序排列，运行命令保持不变。
 
