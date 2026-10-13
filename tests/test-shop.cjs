@@ -70,7 +70,7 @@ async function main() {
     return b;
   };
   const merchantOpen = (floor=28) => {key([15,31].includes(floor)?40:38);assert.equal(e.emu_dialog_active(),1);};
-  for(const floor of [6,7,12,15,28,31,38,39,45,47]) {
+  for(const floor of [2,6,7,12,15,28,31,38,39,45,47]) {
     load(merchantFixture(floor));merchantOpen(floor);key(27);const original=save();
     merchantOpen(floor);touch(150,188);assert.equal(e.emu_dialog_active(),0,'tap later closes NPC offer on floor '+floor);
     assert.deepEqual(save(),original,'cancelling preserves gold, keys, items, stats and merchant on floor '+floor);
@@ -86,12 +86,15 @@ async function main() {
   for(let i=0;i<4&&e.emu_dialog_active();i++)key(41);
   assert.equal(e.emu_dialog_active(),0,'dismiss the original post-purchase information');
   const bought=save();assert.equal(bought.readUInt32LE(0x52),9950);assert.equal(bought.readUInt32LE(0x5e),1);
+  load(merchantFixture(2));merchantOpen(2);touch(88,188);assert.equal(e.emu_dialog_active(),0);
+  const blessed=save();assert.equal(blessed.readUInt32LE(0x4a),103);assert.equal(blessed.readUInt32LE(0x4e),103);
+  assert.equal(blessed.readUInt32LE(0x52),10000,'accepted blessing retains its original free 3% increase');
   for(let i=0;i<30;i++){load(beforeSale);merchantOpen();touch(150,188);assert.deepEqual(save(),beforeSale);}
   const checks=['four original shop floors','tap health / attack / defense / leave',
     'direction selection and confirmation','original price increases and gold deductions',
     'upgrades survive save / load','insufficient gold dialogue','movement after closing','100 reopen / cancel / save cycles',
     'original firmware background colour','stable popup redraw without Web selection overlay',
-    'NPC cancel and text taps preserve the full save on ten merchant floors',
+    'NPC cancel and text taps preserve the full save on all eleven offer floors, including the rescued elder blessing',
     'original key sale / purchase and keyboard accept / return', '30 NPC cancel and reopen cycles'];
   fs.writeFileSync(path.join(projectRoot,'verification/shop-fixture.json'),JSON.stringify({format:'hjx-magic-tower-portrait-v1',version:1,data:fixture(4).toString('base64')}));
   load(fixture(4));open();

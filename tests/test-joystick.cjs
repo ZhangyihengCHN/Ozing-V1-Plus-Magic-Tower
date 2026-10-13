@@ -45,9 +45,9 @@ async function main() {
   pad.contains=el=>dirs.includes(el);
   pad.querySelectorAll=selector=>selector==='[data-key]'?dirs:dirs.filter(el=>el.classList.contains('pressed'));
   pad.querySelector=selector=>dirs.find(el=>selector.includes('"'+el.dataset.key+'"'));
-  const drawnFrames=new Set();
-  els.screen.getContext=()=>({createImageData:()=>({data:new Uint8ClampedArray(240*320*4)}),
-    putImageData(pixels){drawnFrames.add(require('node:crypto').createHash('sha256').update(pixels.data).digest('hex'));}});
+  const drawnFrames=new Set();let paintCalls=0,lastPaint=null,contextLost=false;
+  els.screen.getContext=()=>({isContextLost:()=>contextLost,createImageData:()=>({data:new Uint8ClampedArray(240*320*4)}),
+    putImageData(pixels){paintCalls++;lastPaint=Buffer.from(pixels.data);drawnFrames.add(require('node:crypto').createHash('sha256').update(pixels.data).digest('hex'));}});
   els.loading.querySelector=()=>new Element('loading-child');
   const doc=new Element('document'); doc.hidden=false;
   doc.getElementById=id=>els[id];
@@ -89,6 +89,32 @@ async function main() {
   const advance=ms=>{const stop=now+ms;while(now<stop){now+=16;frame(now);}};
   const pointer=(name,x,y,id=1)=>pad.fire(name,{clientX:x,clientY:y,pointerId:id,isPrimary:true});
   const checks=[];
+  for(const event of ['visibilitychange','pageshow','focus','contextrestored']){
+    reset();
+    pointer('pointerdown',124,72);pointer('pointerup',124,72);
+    const stopped=pos(),visible=Buffer.from(lastPaint),before=paintCalls;
+    lastPaint=null;
+    if(event==='visibilitychange'){
+      doc.hidden=true;doc.fire(event);now+=60000;doc.hidden=false;doc.fire(event);
+    }else if(event==='contextrestored'){els.screen.fire('contextlost');els.screen.fire(event);}
+    else win.fire(event,{persisted:event==='pageshow'});
+    assert.ok(paintCalls>before,event+' redraws without a click');assert.deepEqual(lastPaint,visible);
+    advance(64);assert.deepEqual(pos(),stopped,event+' does not replay held movement');
+    assert.equal(pad.querySelectorAll('.pressed').length,0);
+  }
+  reset();controls.find(el=>el.dataset.key==='27').fire('click',{detail:0});
+  const pausedFrame=Buffer.from(lastPaint),pausedCalls=paintCalls;lastPaint=null;
+  win.fire('pageshow',{persisted:true});advance(64);
+  assert.ok(paintCalls>pausedCalls);assert.deepEqual(lastPaint,pausedFrame);assert.equal(els.menu.hidden,false,'redraw retains the open menu');
+  els['menu-resume'].fire('click');
+  reset();const intact=Buffer.from(lastPaint),intactCalls=paintCalls;
+  contextLost=true;els.screen.fire('contextlost');win.fire('focus');advance(64);
+  assert.equal(paintCalls,intactCalls,'lost context waits for backing storage restoration');
+  contextLost=false;els.screen.fire('contextrestored');assert.deepEqual(lastPaint,intact);
+  reset();els.save.fire('click');win.fire('pageshow',{persisted:true});advance(64);
+  assert.equal(els['save-picker'].hidden,false,'restore keeps the selected save menu open');
+  els['save-picker-close'].fire('click');
+  checks.push('return from background, focus, bfcache and canvas context recovery redraw without input or replaying movement, including paused menu');
   reset();assert.equal(els.save.disabled,false,'saving is available on an idle map');
   assert.equal(bookButton.disabled,true,'unowned book is unavailable');
   checks.push('toolbar availability on title and idle map');
@@ -204,6 +230,9 @@ async function main() {
     assert.equal(bookButton.disabled,false,'owned book is available on the map');
     bookButton.fire('pointerdown',{pointerId:7});bookButton.fire('pointerup',{pointerId:7});bookButton.fire('click',{detail:1});
     assert.equal(core.emu_dialog_active(),1,'one physical tap opens the book without an extra click');
+    const dialogFrame=Buffer.from(lastPaint),dialogPaints=paintCalls;
+    doc.hidden=true;doc.fire('visibilitychange');now+=60000;doc.hidden=false;doc.fire('visibilitychange');
+    assert.ok(paintCalls>dialogPaints);assert.deepEqual(lastPaint,dialogFrame);assert.equal(core.emu_dialog_active(),1,'return to foreground does not dismiss native dialogue');
     assert.equal(bookButton.disabled,false,'book remains enabled for closing its own dialog');assert.equal(bookButton['aria-pressed'],'true');
     assert.equal(els.save.disabled,true,'save dims while a native dialog is open');
     bookButton.fire('pointerdown',{pointerId:7});bookButton.fire('pointerup',{pointerId:7});bookButton.fire('click',{detail:1});assert.equal(core.emu_dialog_active(),0,'second physical tap closes the original book');assert.equal(bookButton['aria-pressed'],'false');

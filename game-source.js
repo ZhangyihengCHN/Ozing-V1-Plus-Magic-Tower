@@ -5,7 +5,7 @@
   const canvas = $('screen'), ctx = canvas.getContext('2d', {alpha:false});
   const titlePixels = ctx.createImageData(240, 320);
   const gamePixels = ctx.createImageData(240, 296);
-  let viewTop = 0;
+  let viewTop = 0, redrawFrames = 0;
   const STORE = 'hjx-magic-tower-portrait-v1';
   const SLOT_STORE = 'hjx-magic-tower-portrait-slots-v1';
   const SLOT_COUNT = 3;
@@ -35,6 +35,7 @@
     if (core.emu_last_error()) throw new Error(`游戏运行错误 ${core.emu_last_error()} / ${core.emu_last_error_pc().toString(16)}`);
   }
   function draw() {
+    if(ctx.isContextLost?.())return false;
     // Gameplay reserves 24 empty rows for the original system title bar.
     // Show only its game area; the original title screen keeps its full image.
     viewTop = core.emu_mode() === 0 ? 24 : 0;
@@ -74,6 +75,12 @@
   }
   function refresh() {
     core.emu_paint();check();draw();updateTools();
+  }
+  function restoreView() {
+    release(); last = performance.now(); redrawFrames = 2;
+    if(core && gameReady && !document.hidden) {
+      try { draw();updateTools(); } catch(err) { error(err); }
+    }
   }
   function error(err) { setPaused(true);$('paused').querySelector('strong').textContent=err.message || '游戏运行出错';console.error(err); }
   function menuError(message){setMenu(true);$('menu-error').textContent=message;$('menu-error').hidden=false;}
@@ -340,6 +347,11 @@
     if(!value)focusGame();
   }
   function frame(now) {
+    // Mobile browsers may discard the canvas surface in the background.
+    // Copy the existing frame back without sending input or advancing a dialog.
+    if(redrawFrames && core && gameReady && !document.hidden) {
+      try { if(draw()!==false)redrawFrames--; } catch(err) { error(err); }
+    }
     if(joystickPointer!==null && joystick.hasPointerCapture && !joystick.hasPointerCapture(joystickPointer))release();
     if(slotMode && !document.hidden && held!==null && now>=repeatAt){act(held);repeatAt=now+180;}
     if (core && !paused && !document.hidden) {
@@ -473,7 +485,12 @@
   document.addEventListener('visibilitychange',() => {
     release(); last = performance.now();
     if(document.hidden && dirty) { try { checkpoint(); } catch(_) {} }
+    if(!document.hidden)restoreView();
   });
+  window.addEventListener('pageshow',restoreView);
+  window.addEventListener('focus',restoreView);
+  canvas.addEventListener('contextrestored',restoreView);
+  canvas.addEventListener('contextlost',()=>{release();redrawFrames=2;});
   window.addEventListener('pagehide',() => { release();if(dirty) { try { checkpoint(); } catch(_) {} } });
   canvas.addEventListener('pointerdown',event => {
     if(!core || !gameReady || paused) return;
