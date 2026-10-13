@@ -1,5 +1,7 @@
 # Ozing V1+ Magic Tower · 魔塔 50 竖屏 Web 版
 
+**在线游玩：[https://mt.zzzyyyhhh.cn/](https://mt.zzzyyyhhh.cn/)**
+
 原生 HTML / CSS / JavaScript + WebAssembly，无前端框架、CDN 或游戏后端。Web 界面运行原版 ARM 程序，保留魔塔的地图、战斗、商店、剧情和内部窗口；手机采用竖屏布局，电脑采用游戏与操作区并排布局。
 
 **这是源码仓库。原厂固件、贴图、字库和包含它们的运行包不随仓库分发，需要本地准备资源后构建。** 自行编写的源码采用 [MIT](LICENSE)，第三方内容见 [许可说明](THIRD_PARTY_NOTICES.md)。
