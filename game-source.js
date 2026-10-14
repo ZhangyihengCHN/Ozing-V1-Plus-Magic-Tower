@@ -2,6 +2,8 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
+  const webVersion = '__WEB_VERSION__';
+  for(const id of ['menu-version','about-version'])$(id).textContent = 'Web v' + webVersion;
   const canvas = $('screen'), ctx = canvas.getContext('2d', {alpha:false});
   const titlePixels = ctx.createImageData(240, 320);
   const gamePixels = ctx.createImageData(240, 296);
@@ -50,10 +52,11 @@
     ctx.putImageData(pixels,0,0);
   }
   function updateTools() {
-    const ready = !!core && gameReady && !slotMode, canSave = ready && !!core.web_can_checkpoint();
+    const ready = !!core && gameReady && !slotMode, aboutOpen = !$('about').hidden;
+    const canSave = ready && !aboutOpen && !!core.web_can_checkpoint();
     $('save').disabled = !canSave;
     $('menu-save').disabled = !canSave;
-    $('continue').disabled = !ready || !hasStoredSave;
+    $('continue').disabled = !ready || aboutOpen || !hasStoredSave;
     bookButton.disabled = !ready || paused || !core.web_can_book();
     bookButton.setAttribute('aria-pressed',!!core && !!core.web_book_active()?'true':'false');
     $('fly-up').disabled = !ready || paused || !core.web_can_fly(0);
@@ -68,8 +71,8 @@
       button.title=itemNames[slot]+'（'+((slot+1)%10)+'）'+(owned?'':' · 未获得');
       button.setAttribute('aria-label',button.title+(slot===6&&owned?' · 剩余 '+count+' 次':''));
     });
-    $('export').disabled = !ready || !(canSave || hasStoredSave);
-    $('import').disabled = !ready;
+    $('export').disabled = !ready || aboutOpen || !(canSave || hasStoredSave);
+    $('import').disabled = !ready || aboutOpen;
     directionButtons.forEach(button=>button.disabled=!(slotMode || ready && !paused));
     document.querySelectorAll('.controls > [data-key]').forEach(button=>button.disabled=!(slotMode || ready));
   }
@@ -87,7 +90,10 @@
   function act(key) {
     if(slotMode) { slotKey(key); return; }
     if (!core || !gameReady) return;
-    if(paused){if(key===27 || key===41)setPaused(false);return;}
+    if(paused){
+      if(!$('about').hidden){if(key===27 || key===41)closeAbout();return;}
+      if(key===27 || key===41)setPaused(false);return;
+    }
     if(core.web_busy() || core.web_combat_active()) return;
     if(key===27&&!core.emu_dialog_active()) { setMenu(true); return; }
     try {
@@ -334,6 +340,7 @@
   }
   function setMenu(value) {
     if(slotMode)return;
+    $('about').hidden=true;
     paused = value; release(); $('menu').hidden = !value; $('paused').hidden = true;$('menu-error').hidden=true;
     last = performance.now();
     updateTools();
@@ -341,10 +348,19 @@
   }
   function setPaused(value) {
     if(slotMode)closeSlots();
+    $('about').hidden=true;
     paused = value; release(); $('menu').hidden = true; $('paused').hidden = !value;
     last = performance.now();
     updateTools();
     if(!value)focusGame();
+  }
+  function openAbout() {
+    if(!core || !gameReady || slotMode)return;
+    release();paused=true;$('menu').hidden=true;$('about').hidden=false;
+    last=performance.now();updateTools();$('about-back').focus({preventScroll:true});
+  }
+  function closeAbout() {
+    setMenu(true);$('menu-about').focus({preventScroll:true});
   }
   function frame(now) {
     // Mobile browsers may discard the canvas surface in the background.
@@ -432,6 +448,12 @@
     if(event.ctrlKey || event.altKey || event.metaKey || event.target.tagName==='INPUT' ||
        event.target.tagName==='TEXTAREA' || event.target.isContentEditable) return;
     const key = keyboardKey(event);
+    if(!$('about').hidden && key!==undefined){
+      event.preventDefault();release();
+      if(!event.repeat && (key===27 || key===41))closeAbout();
+      else if([37,38,39,40].includes(key))$('about-back').focus({preventScroll:true});
+      return;
+    }
     const digit=/^(?:Digit|Numpad)([0-9])$/.exec(event.code||'')?.[1] ?? (/^[0-9]$/.test(event.key)?event.key:null);
     if(digit!==null){event.preventDefault();if(!event.repeat&&!event.shiftKey)useItem((Number(digit)+9)%10);return;}
     // Hardware shortcuts never repeat or bypass the corresponding button state.
@@ -503,6 +525,8 @@
   });
   $('resume').addEventListener('click',() => setPaused(false));
   $('menu-resume').addEventListener('click',() => setMenu(false));
+  $('menu-about').addEventListener('click',openAbout);
+  $('about-back').addEventListener('click',closeAbout);
   $('menu-save').addEventListener('click',() => { try { openSlots('save'); } catch(err) { error(err); } });
   $('menu-title').addEventListener('click',() => {
     try {

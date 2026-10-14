@@ -39,7 +39,7 @@ async function main() {
   const fixture={format:STORE,version:1,data:bytes.toString('base64')};
   const ids=Array.from(fs.readFileSync(path.join(projectRoot,'index.html'),'utf8').matchAll(/id="([^"]+)"/g),m=>m[1]);
   const els=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
-  for(const id of ['menu','paused','save-picker','save-overwrite','save-picker-error','save-auto'])els[id].hidden=true;
+  for(const id of ['menu','about','paused','save-picker','save-overwrite','save-picker-error','save-auto'])els[id].hidden=true;
   const controls=[38,37,39,40,27,41,66].map(key=>{const el=new Element('key-'+key);el.dataset.key=String(key);return el;});
   const pad=els.joystick,dirs=controls.slice(0,4);
   pad.contains=el=>dirs.includes(el);
@@ -52,7 +52,7 @@ async function main() {
   const doc=new Element('document'); doc.hidden=false;
   doc.getElementById=id=>els[id];
   for(const el of Object.values(els))el.doc=doc;
-  els.menu.querySelectorAll=()=>['menu-resume','menu-save','menu-title','export'].map(id=>els[id]).filter(el=>!el.disabled);
+  els.menu.querySelectorAll=()=>['menu-resume','menu-save','menu-title','menu-about','export'].map(id=>els[id]).filter(el=>!el.disabled);
   els.screen.tagName='CANVAS';
   doc.querySelector=selector=>selector==='[data-key="66"]'?controls.find(el=>el.dataset.key==='66'):new Element('details');
   doc.querySelectorAll=selector=>selector==='[data-key]'?controls:selector==='.controls > [data-key]'?controls.filter(el=>['27','41'].includes(el.dataset.key)):selector==='.pressed'?controls.filter(el=>el.classList.contains('pressed')):[...controls,...Object.values(els)];
@@ -130,6 +130,28 @@ async function main() {
   doc.fire('keydown',{key:'F5',repeat:false});assert.equal(els['save-picker'].hidden,false);doc.fire('keydown',{key:'Escape',repeat:false});assert.equal(els['save-picker'].hidden,true);
   doc.fire('keydown',{key:'F9',repeat:false});assert.equal(els['save-picker'].hidden,false);doc.fire('keydown',{key:'Escape',repeat:false});assert.equal(els['save-picker'].hidden,true);
   checks.push('arrows and physical WASD with hold/release/highlight, ignored modifiers and editable fields, keyboard menu navigation, Z/X confirm/return, F5 save and F9 load');
+  const packageVersion=JSON.parse(fs.readFileSync(path.join(projectRoot,'package.json'),'utf8')).version;
+  assert.equal(els['menu-version'].textContent,'Web v'+packageVersion);
+  assert.equal(els['about-version'].textContent,els['menu-version'].textContent);
+  doc.fire('keydown',{key:'Escape',repeat:false});
+  for(let i=0;i<3;i++)doc.fire('keydown',{key:'ArrowDown',repeat:false});
+  assert.equal(doc.activeElement,els['menu-about']);
+  doc.fire('keydown',{key:'z',code:'KeyZ',repeat:false});
+  assert.equal(els.about.hidden,false);assert.equal(els.menu.hidden,true);
+  assert.equal(doc.activeElement,els['about-back']);
+  const aboutPosition=pos(),aboutGeneration=core.emu_save_generation();
+  assert.equal(els.save.disabled,true);assert.equal(els.continue.disabled,true);assert.equal(els.import.disabled,true);
+  doc.fire('keydown',{key:'ArrowDown',repeat:false});doc.fire('keydown',{key:'F5',repeat:false});advance(600);
+  assert.equal(els['save-picker'].hidden,true);assert.deepEqual(pos(),aboutPosition);assert.equal(core.emu_save_generation(),aboutGeneration);
+  doc.fire('keydown',{key:'Escape',repeat:false});
+  assert.equal(els.about.hidden,true);assert.equal(els.menu.hidden,false);assert.equal(doc.activeElement,els['menu-about']);
+  for(const key of [27,41]){
+    els['menu-about'].click();controls.find(el=>Number(el.dataset.key)===key).fire('click',{detail:0});
+    assert.equal(els.about.hidden,true);assert.equal(els.menu.hidden,false);
+  }
+  els['menu-about'].click();els['about-back'].click();els['menu-resume'].click();
+  assert.equal(els.about.hidden,true);assert.equal(els.menu.hidden,true);assert.equal(doc.activeElement,els.screen);
+  checks.push('package version, about menu navigation, keyboard and touch return, paused game and blocked save shortcuts');
   for(const [name,x,y,axis,sign] of [['up',72,20,1,-1],['down',72,124,1,1],['left',20,72,0,-1],['right',124,72,0,1]]) {
     reset();pointer('pointerdown',x,y);assert.equal(pos()[axis],5+sign,'first step '+name);
     assert.deepEqual(pad.querySelectorAll('.pressed').map(el=>el.dataset.key),[String({up:38,down:40,left:37,right:39}[name])]);

@@ -34,7 +34,7 @@ async function main(){
  const legacy=fixture(),storage=new Map([[STORE,JSON.stringify(legacy)]]),checks=[];
  let denyWrites=false,now=0,frame,core,exported;
  const ids=[...fs.readFileSync('index.html','utf8').matchAll(/id="([^"]+)"/g)].map(m=>m[1]),els=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
- for(const id of['menu','paused','save-picker','save-overwrite','save-picker-error','save-auto'])els[id].hidden=true;
+ for(const id of['menu','about','paused','save-picker','save-overwrite','save-picker-error','save-auto'])els[id].hidden=true;
  const controls=[38,37,39,40,27,41,66].map(k=>{const e=new Element('key-'+k);e.dataset.key=String(k);return e;}),dirs=controls.slice(0,4);
  const doc=new Element('document');doc.tagName='DOCUMENT';doc.getElementById=id=>els[id];doc.createElement=tag=>{const e=new Element(tag);e.tagName=tag.toUpperCase();e.doc=doc;return e;};
  for(const e of Object.values(els))e.doc=doc;

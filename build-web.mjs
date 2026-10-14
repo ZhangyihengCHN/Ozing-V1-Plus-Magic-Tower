@@ -17,7 +17,9 @@ const bundled = await build({
 });
 const crypto = bundled.outputFiles[0].text;
 await fs.writeFile(new URL('save-crypto.bundle.js', root), crypto);
-const source = await fs.readFile(new URL('game-source.js', root), 'utf8');
+const { version } = JSON.parse(await fs.readFile(new URL('package.json', root), 'utf8'));
+if (!/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(version)) throw new Error('Invalid Web version in package.json');
+const source = (await fs.readFile(new URL('game-source.js', root), 'utf8')).replace('__WEB_VERSION__', version);
 const license = await fs.readFile(new URL('node_modules/@noble/ciphers/LICENSE', root), 'utf8');
 const banner = '/* Bundled @noble/ciphers 2.4.0\n' + license.replaceAll('*/', '* /') + '\n*/\n';
 await fs.writeFile(new URL('game.js', root), banner + '(() => {\n' + crypto + '\n' + source + '\n})();\n');

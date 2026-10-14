@@ -26,12 +26,24 @@
         <button id="menu-resume">继续游戏</button>
         <button id="menu-save">保存进度</button>
         <button id="menu-title">返回标题</button>
+        <button id="menu-about">关于游戏</button>
         <div class="save-transfer" role="group" aria-label="存档备份与恢复">
         <button id="export" disabled>导出存档</button>
         <label class="import-button" for="import">导入存档<input id="import" type="file" accept=".json" disabled></label>
         </div>
         <p id="menu-error" role="alert" hidden></p>
+        <span id="menu-version" class="game-version"></span>
       </div>
+      <section id="about" class="overlay about-screen" role="dialog" aria-modal="true" aria-labelledby="about-title" hidden>
+        <header class="about-heading"><strong id="about-title">魔塔 50</strong><p>好记星 V1+ 学习机原版</p><span id="about-version" class="game-version"></span></header>
+        <div class="about-copy">
+          <p>将学习机里的 50 层魔塔带到浏览器，保留原版地图、剧情、战斗、商店与道具规则。</p>
+          <p>网页通过 WebAssembly 运行原版 ARM 游戏，使用原生 HTML、CSS 和 JavaScript，支持手机竖屏与电脑键盘。</p>
+          <p>Web 适配：ZhangyihengCHN<br>自行编写的源码采用 MIT 许可；原厂游戏程序与资源不包含在此许可中。</p>
+          <a href="https://github.com/ZhangyihengCHN/Ozing-V1-Plus-Magic-Tower" target="_blank" rel="noopener noreferrer">查看开源仓库 <span aria-hidden="true">↗</span></a>
+        </div>
+        <button id="about-back">返回菜单</button>
+      </section>
       <div id="save-picker" class="save-picker" hidden>
         <section class="save-dialog" role="dialog" aria-labelledby="save-picker-title" tabindex="-1">
           <header class="save-dialog-header"><div><h2 id="save-picker-title">保存进度</h2><p id="save-picker-subtitle"></p></div><button id="save-picker-close" aria-label="关闭存档选择">关闭</button></header>

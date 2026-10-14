@@ -23,6 +23,17 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:240 / 296;image-renderi
 .overlay span{font-size:12px;color:var(--muted)}
 .overlay button{width:min(76%,180px);min-height:40px;padding:9px 16px;font-size:13px;line-height:1.4}
 #menu-error{max-width:90%;margin:8px 0 0;font-size:12px;line-height:1.6;text-align:center;color:#e7b89a}
+.overlay .game-version{font-size:11px;letter-spacing:.5px;font-variant-numeric:tabular-nums;color:var(--muted)}
+#menu .game-version{margin-top:2px}
+.about-screen{gap:16px;padding:20px}
+.about-heading{text-align:center}.about-heading strong{font-size:24px;letter-spacing:3px}
+.about-heading p{margin:7px 0 9px;font-size:12px;color:var(--muted)}
+.about-heading .game-version{display:inline-block;padding:3px 9px;border:1px solid var(--line);border-radius:20px}
+.about-copy{width:100%;max-width:280px;font-size:12px;line-height:1.8;color:var(--ink)}
+.about-copy p{margin:0 0 12px}.about-copy p:last-of-type{color:var(--muted);font-size:11px}
+.about-copy a{color:var(--gold);text-underline-offset:4px}.about-copy a span{color:inherit}
+.about-copy a:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+@container(max-width:250px){.about-screen{padding:12px;gap:10px}.about-heading strong{font-size:20px}.about-copy{font-size:11px;line-height:1.6}.about-copy p{margin-bottom:9px}#menu{gap:8px}#menu>button,.save-transfer button,.save-transfer .import-button{min-height:34px;padding-top:6px;padding-bottom:6px}}
 /* Five equal actions share one compact toolbar above the joystick. */
 .tools{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;margin:12px 0 8px;background:var(--line);border-radius:var(--radius);box-shadow:0 2px 8px #0002}
 .progress-actions,.secondary-actions{display:contents}
