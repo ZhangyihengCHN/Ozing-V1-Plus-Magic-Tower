@@ -25,7 +25,11 @@ async function main(){
  // A saved original story trigger opens its dialogue while standing still.
  const dialogue=fixture(40,0);dialogue.writeUInt32LE(5,0x76);dialogue.writeUInt32LE(6,0x7a);dialogue.writeUInt32LE(1,0xd2);
  assert.equal(dialogue[254+39*121+71],0,'real trigger tile is empty');load(dialogue);const pos=state();assert.equal(e.emu_dialog_active(),0);assert.equal(e.web_tick(16),2);assert.equal(e.emu_dialog_active(),1);assert.deepEqual(state(),pos);
- fs.writeFileSync('verification/story-dialog.rgba',pixels());for(let i=0;i<20;i++){assert.equal(e.web_tick(16),1);assert.equal(e.emu_dialog_active(),1);assert.deepEqual(state(),pos);}key(41);assert.equal(e.emu_dialog_active(),0);assert.equal(e.web_tick(16),1);save();
+ const dialogFrame=pixels();
+ const dialogPixels=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);
+ for(const [x,y] of [[33,41],[207,41],[33,65],[207,65]])assert.equal(dialogPixels[y*240+x],0xffffff,'story speaker caption is opaque');
+ for(let i=0;i<10;i++){e.emu_paint();check();assert.deepEqual(pixels(),dialogFrame,'story caption and body remain stable');}
+ fs.writeFileSync('verification/story-dialog.rgba',dialogFrame);for(let i=0;i<20;i++){assert.equal(e.web_tick(16),1);assert.equal(e.emu_dialog_active(),1);assert.deepEqual(state(),pos);}key(41);assert.equal(e.emu_dialog_active(),0);assert.equal(e.web_tick(16),1);save();
  // The firmware synchronously sends a zero-key event after a battle. This
  // used to be dropped by the RTOS host, leaving the completion dialogue pending.
  const battle=fixture(40,0),map=254+39*121,guards=[12,13,14,18,19,20,35,36,37,39,40,41];assert.ok(battle[map+12]>=0xc0);for(const i of guards.slice(1))battle[map+i]=0;

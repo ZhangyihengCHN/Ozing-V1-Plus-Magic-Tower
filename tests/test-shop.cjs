@@ -71,7 +71,16 @@ async function main() {
   };
   const merchantOpen = (floor=28) => {key([15,31].includes(floor)?40:38);assert.equal(e.emu_dialog_active(),1);};
   for(const floor of [2,6,7,12,15,28,31,38,39,45,47]) {
-    load(merchantFixture(floor));merchantOpen(floor);key(27);const original=save();
+    load(merchantFixture(floor));merchantOpen(floor);
+    const dialogPixels=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);
+    for(const [x,y] of [[33,41],[207,41],[33,65],[207,65]])
+      assert.equal(dialogPixels[y*240+x],0xffffff,'NPC name caption is opaque on floor '+floor);
+    let nameInk=0;
+    for(let y=44;y<64;y++)for(let x=40;x<200;x++)if(dialogPixels[y*240+x]===0)nameInk++;
+    assert.ok(nameInk>20,'original NPC name glyphs remain visible');
+    const dialogFrame=Buffer.from(dialogPixels);
+    for(let n=0;n<5;n++){e.emu_paint();check();assert.deepEqual(Buffer.from(dialogPixels),dialogFrame,'NPC caption survives repaints');}
+    key(27);const original=save();
     merchantOpen(floor);touch(150,188);assert.equal(e.emu_dialog_active(),0,'tap later closes NPC offer on floor '+floor);
     assert.deepEqual(save(),original,'cancelling preserves gold, keys, items, stats and merchant on floor '+floor);
     merchantOpen(floor);touch(40,110);assert.equal(e.emu_dialog_active(),1,'tap on NPC text does not accept');
@@ -94,6 +103,7 @@ async function main() {
     'direction selection and confirmation','original price increases and gold deductions',
     'upgrades survive save / load','insufficient gold dialogue','movement after closing','100 reopen / cancel / save cycles',
     'original firmware background colour','stable popup redraw without Web selection overlay',
+    'opaque original NPC name captions and stable redraw on all eleven offer floors',
     'NPC cancel and text taps preserve the full save on all eleven offer floors, including the rescued elder blessing',
     'original key sale / purchase and keyboard accept / return', '30 NPC cancel and reopen cycles'];
   fs.writeFileSync(path.join(projectRoot,'verification/shop-fixture.json'),JSON.stringify({format:'hjx-magic-tower-portrait-v1',version:1,data:fixture(4).toString('base64')}));

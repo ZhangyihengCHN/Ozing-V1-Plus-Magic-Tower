@@ -2643,7 +2643,23 @@ static int resume_suspended(void){if(!suspended_valid)return 1;cpu=suspended_cpu
 static void clearfb(void){for(u32 i=0;i<FB_W*FB_H;i++)framebuffer[i]=0;}
 
 /* Original RTOS non-client painter reached from WM_NCPAINT (0x85). */
-static void paint_nonclient(void){if(!child.active)return;CPU saved=cpu;int sv=suspended_valid;CPU ssave=suspended_cpu;suspended_valid=0;call_arm(0x30197544u,child.handle,0,0,0,300000);cpu=saved;suspended_valid=sv;suspended_cpu=ssave;g_error=0;paint_notebook_selection();}
+static void paint_nonclient(void){
+ if(!child.active)return;
+ /* Caption skin blits are not backed by the standalone host. The original
+    modal painter fills only the client below the speaker's name, so make
+    its non-client caption opaque before the firmware draws that name.
+    Use the RTOS client boundary and the dialog's existing background colour. */
+ if(!child.modeless&&(mr32(child.handle+0x10u)&0x00c00000u)==0x00c00000u){
+  i32 top=0;
+  if(child_client_rect(child.handle,0,&top,0,0)&&top>0){
+   Obj*d=getobj(child.dc);
+   if(d)fillrect(d,0,0,child.right-child.left,top,cref_to_rgb(d->bk_color));
+  }
+ }
+ CPU saved=cpu;int sv=suspended_valid;CPU ssave=suspended_cpu;suspended_valid=0;
+ call_arm(0x30197544u,child.handle,0,0,0,300000);
+ cpu=saved;suspended_valid=sv;suspended_cpu=ssave;g_error=0;paint_notebook_selection();
+}
 static void deliver_child(void){if(!child.active||!child.pending)return;child.pending=0;CPU saved=cpu;int sv=suspended_valid;CPU ssave=suspended_cpu;suspended_valid=0;call_arm(child.callback,child.handle,1,0,0,300000);call_arm(child.callback,child.handle,WM_PAINT,0,0,500000);paint_nonclient();cpu=saved;suspended_valid=sv;suspended_cpu=ssave;g_error=0;}
 #include "web_windows.inc"
 
