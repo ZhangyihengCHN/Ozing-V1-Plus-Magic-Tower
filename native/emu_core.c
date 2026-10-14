@@ -2648,12 +2648,14 @@ static void paint_nonclient(void){
  /* Caption skin blits are not backed by the standalone host. The original
     modal painter fills only the client below the speaker's name, so make
     its non-client caption opaque before the firmware draws that name.
-    Use the RTOS client boundary and the dialog's existing background colour. */
+    Use the RTOS client boundary and the dialog's existing background colour.
+    Both original NPC painters fill x=[2,178) in their 180-pixel window;
+    match that two-pixel inset rather than widening the caption over the map. */
  if(!child.modeless&&(mr32(child.handle+0x10u)&0x00c00000u)==0x00c00000u){
   i32 top=0;
   if(child_client_rect(child.handle,0,&top,0,0)&&top>0){
    Obj*d=getobj(child.dc);
-   if(d)fillrect(d,0,0,child.right-child.left,top,cref_to_rgb(d->bk_color));
+   if(d)fillrect(d,2,0,child.right-child.left-2,top,cref_to_rgb(d->bk_color));
   }
  }
  CPU saved=cpu;int sv=suspended_valid;CPU ssave=suspended_cpu;suspended_valid=0;

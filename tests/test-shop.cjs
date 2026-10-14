@@ -71,10 +71,16 @@ async function main() {
   };
   const merchantOpen = (floor=28) => {key([15,31].includes(floor)?40:38);assert.equal(e.emu_dialog_active(),1);};
   for(const floor of [2,6,7,12,15,28,31,38,39,45,47]) {
-    load(merchantFixture(floor));merchantOpen(floor);
+    load(merchantFixture(floor));
+    const mapPixels=new Uint32Array(new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320));
+    merchantOpen(floor);
     const dialogPixels=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);
     for(const [x,y] of [[33,41],[207,41],[33,65],[207,65]])
       assert.equal(dialogPixels[y*240+x],0xffffff,'NPC name caption is opaque on floor '+floor);
+    for(let x=30;x<210;x++){
+      assert.equal(dialogPixels[41*240+x],x>=32&&x<208?0xffffff:mapPixels[41*240+x],'caption edges match the body and preserve the surrounding map');
+      if(x>=32&&x<208)assert.equal(dialogPixels[130*240+x],0xffffff,'body retains original white interior');
+    }
     let nameInk=0;
     for(let y=44;y<64;y++)for(let x=40;x<200;x++)if(dialogPixels[y*240+x]===0)nameInk++;
     assert.ok(nameInk>20,'original NPC name glyphs remain visible');
@@ -99,13 +105,39 @@ async function main() {
   const blessed=save();assert.equal(blessed.readUInt32LE(0x4a),103);assert.equal(blessed.readUInt32LE(0x4e),103);
   assert.equal(blessed.readUInt32LE(0x52),10000,'accepted blessing retains its original free 3% increase');
   for(let i=0;i<30;i++){load(beforeSale);merchantOpen();touch(150,188);assert.deepEqual(save(),beforeSale);}
+  // All initially placed informational NPCs use the original Continue dialog.
+  // Return dismisses it like Confirm; it does not undo its story/reward event.
+  const informational=[];
+  const finishDialogue=()=>{
+    for(let n=0;n<120;n++){
+      if(e.web_busy()){e.web_tick(1000);e.emu_paint();check();}
+      else if(e.emu_dialog_active())key(41);
+      else return save();
+    }
+    throw new Error('NPC continuation did not settle');
+  };
+  for(let floor=1;floor<=50;floor++)for(let index=0;index<121;index++){
+    const map=254+(floor-1)*121,id=base[map+index];
+    if(![0x30,0x31,0x33].includes(id))continue;
+    const b=Buffer.from(base),dy=index<110?1:-1;
+    b[5]=floor;b.writeUInt32LE(50,9);b.writeUInt32LE(10000,0x52);
+    b.writeUInt32LE(index%11,0x76);b.writeUInt32LE(Math.floor(index/11)+dy,0x7a);b[map+index+11*dy]=0;
+    if(floor===2)b.writeUInt32LE(1,0x86);
+    const interact=()=>{load(b);key(dy===1?38:40);assert.equal(e.emu_dialog_active(),1,'NPC dialogue opens on floor '+floor);};
+    interact();key(27);const returned=finishDialogue();
+    interact();key(41);const confirmed=finishDialogue();
+    assert.deepEqual(returned,confirmed,'informational NPC Return follows original Continue rules on floor '+floor);
+    informational.push({floor,id:id.toString(16)});
+  }
   const checks=['four original shop floors','tap health / attack / defense / leave',
     'direction selection and confirmation','original price increases and gold deductions',
     'upgrades survive save / load','insufficient gold dialogue','movement after closing','100 reopen / cancel / save cycles',
     'original firmware background colour','stable popup redraw without Web selection overlay',
     'opaque original NPC name captions and stable redraw on all eleven offer floors',
+    'caption and body white edges align without covering the surrounding map',
     'NPC cancel and text taps preserve the full save on all eleven offer floors, including the rescued elder blessing',
-    'original key sale / purchase and keyboard accept / return', '30 NPC cancel and reopen cycles'];
+    'original key sale / purchase and keyboard accept / return', '30 NPC cancel and reopen cycles',
+    informational.length+' initially placed informational NPCs: Return and Continue settle to identical original story/reward state'];
   fs.writeFileSync(path.join(projectRoot,'verification/shop-fixture.json'),JSON.stringify({format:'hjx-magic-tower-portrait-v1',version:1,data:fixture(4).toString('base64')}));
   load(fixture(4));open();
   const pixels=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);

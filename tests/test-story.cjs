@@ -28,6 +28,10 @@ async function main(){
  const dialogFrame=pixels();
  const dialogPixels=new Uint32Array(e.memory.buffer,e.emu_framebuffer(),240*320);
  for(const [x,y] of [[33,41],[207,41],[33,65],[207,65]])assert.equal(dialogPixels[y*240+x],0xffffff,'story speaker caption is opaque');
+ for(let x=30;x<210;x++){
+  assert.equal(dialogPixels[41*240+x]===0xffffff,x>=32&&x<208,'story caption edges align with body');
+  assert.equal(dialogPixels[130*240+x]===0xffffff,x>=32&&x<208,'story body retains original edges');
+ }
  for(let i=0;i<10;i++){e.emu_paint();check();assert.deepEqual(pixels(),dialogFrame,'story caption and body remain stable');}
  fs.writeFileSync('verification/story-dialog.rgba',dialogFrame);for(let i=0;i<20;i++){assert.equal(e.web_tick(16),1);assert.equal(e.emu_dialog_active(),1);assert.deepEqual(state(),pos);}key(41);assert.equal(e.emu_dialog_active(),0);assert.equal(e.web_tick(16),1);save();
  // The firmware synchronously sends a zero-key event after a battle. This
