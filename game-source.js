@@ -1,6 +1,8 @@
 /* Plain browser JavaScript. The original ARM game owns maps, events and combat. */
 (() => {
   'use strict';
+  // Keep long presses on the game UI from opening native selection or callouts.
+  for(const name of ['selectstart','contextmenu'])document.addEventListener(name,event=>event.preventDefault(),{capture:true});
   const $ = id => document.getElementById(id);
   const webVersion = '__WEB_VERSION__';
   for(const id of ['menu-version','about-version'])$(id).textContent = 'Web v' + webVersion;
@@ -443,7 +445,6 @@
     joystick.addEventListener(name,event => { if(event.pointerId===joystickPointer) release(); });
   }
   joystick.addEventListener('lostpointercapture',event=>{if(event.pointerId===joystickPointer || event.pointerId===undefined)release();});
-  joystick.addEventListener('contextmenu',event => event.preventDefault());
   document.addEventListener('keydown',event => {
     if(event.ctrlKey || event.altKey || event.metaKey || event.target.tagName==='INPUT' ||
        event.target.tagName==='TEXTAREA' || event.target.isContentEditable) return;
